@@ -167,12 +167,16 @@ async function viewOrder(id) {
       <div id="financialSummary" style="margin-bottom:12px;"></div>
       <div class="table-container" style="border:1px solid var(--neutral-200);border-radius:var(--radius-md);">
         <table>
-          <thead><tr><th>Item</th><th>Qty</th><th>PTR rate</th><th>MRP</th></tr></thead>
+          <thead><tr><th>Item</th><th>Offer</th><th>Qty</th><th>PTR rate</th><th>MRP</th></tr></thead>
           <tbody>
             ${items.map(it => `
               <tr class="${it.is_offer_item ? 'has-offer' : ''}">
-                <td>${it.item_name} ${it.is_offer_item ? '<span class="badge badge-warning" style="font-size:0.6rem;">OFFER</span>' : ''}</td>
-                <td>${it.quantity}</td>
+                <td style="font-weight:600;">${it.item_name}</td>
+                <td>
+                  ${it.applied_offer || '—'}
+                  ${it.offer_skipped ? `<div style="font-size:0.65rem; color:#dc2626; font-weight:700;">${it.missed_offer_text || 'Offer'} (Low stock - offer not applied)</div>` : ''}
+                </td>
+                <td>${it.quantity} ${it.bonus_quantity > 0 ? `<span style="color:#166534; font-weight:700;">+${it.bonus_quantity}</span>` : ''}</td>
                 <td>${it.dist_price ? '₹' + parseFloat(it.dist_price).toFixed(2) : '—'}</td>
                 <td>${it.mrp ? '₹' + parseFloat(it.mrp).toFixed(2) : '—'}</td>
               </tr>

@@ -105,10 +105,14 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
             doc.text(dp ? dp.toFixed(2) : '—', 250, y);
             doc.text(mrp ? mrp.toFixed(2) : '—', 310, y, { align: 'right', width: 50 });
 
-            // Clean table: display warning in offer column if skipped
+            // Clean table: display intended offer + warning if skipped
             if (item.offer_skipped) {
-                doc.fillColor('#ef4444').text('Low stock - offer not applied', 380, y, { width: 110 });
-                doc.fillColor('#000000');
+                const offerText = item.missed_offer_text || 'Offer';
+                doc.text(offerText, 380, y, { width: 110 });
+                y += 10;
+                doc.fillColor('#ef4444').fontSize(7).text('(Low stock - offer not applied)', 380, y, { width: 110 });
+                doc.fillColor('#000000').fontSize(8.5);
+                y -= 10; // Keep line alignment for other columns
                 skippedOffers.push(item.item_name);
             } else {
                 doc.text(item.applied_offer || '—', 380, y, { width: 110 });
@@ -229,9 +233,9 @@ router.get('/order-excel/:id', authenticateToken, requireAdmin, async (req, res)
             row.getCell(5).value = m || '—';
             row.getCell(6).value = item.bonus_quantity || 0;
 
-            // Clean table: only show successful offers
+            // Clean table: show intended offer + text if skipped
             if (item.offer_skipped) {
-                row.getCell(7).value = 'Low stock - offer not applied';
+                row.getCell(7).value = `${item.missed_offer_text || 'Offer'} (Low stock - offer not applied)`;
                 row.getCell(7).font = { color: { argb: 'FFFF0000' } };
                 skippedOffers.push({ name: item.item_name, offer: item.missed_offer_text });
             } else {
@@ -451,7 +455,7 @@ router.get('/all-orders-excel', authenticateToken, requireAdmin, async (req, res
                 row.getCell(6).value = item.mrp || 0;
                 row.getCell(7).value = item.bonus_quantity || 0;
                 if (item.offer_skipped) {
-                    row.getCell(8).value = 'Low stock - offer not applied';
+                    row.getCell(8).value = `${item.missed_offer_text || 'Offer'} (Low stock - offer not applied)`;
                     row.getCell(8).font = { color: { argb: 'FFFF0000' } };
                 } else {
                     row.getCell(8).value = item.applied_offer || '—';

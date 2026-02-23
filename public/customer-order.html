@@ -944,7 +944,10 @@
 
                 let offerColumnContent = `<span style="color: #64748b;">${item.applied_offer || '—'}</span>`;
                 if (item.offer_skipped) {
-                    offerColumnContent = `<div style="font-size: 0.55rem; color: #dc2626; font-weight: 700; background: #fee2e2; padding: 2px 4px; border-radius: 3px; line-height: 1.1; text-align: center; border: 1px solid #fecaca;">Low stock - offer not applied</div>`;
+                    offerColumnContent = `
+                        <div style="color: #64748b;">${item.missed_offer_text || 'Offer'}</div>
+                        <div style="font-size: 0.55rem; color: #dc2626; font-weight: 700; line-height: 1.2;">(Low stock - offer not applied)</div>
+                    `;
                 }
 
                 return `
