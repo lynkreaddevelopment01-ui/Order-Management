@@ -159,7 +159,7 @@ router.post('/order', async (req, res) => {
 
         // Find the highest sequence number for this specific admin
         const maxOrderRow = await db.prepare(`
-            SELECT MAX(CAST(SUBSTR(order_number, -6) AS INTEGER)) as max_num 
+            SELECT MAX(CAST(SUBSTR(order_number, 10) AS INTEGER)) as max_num 
             FROM orders 
             WHERE admin_id = $1
         `).get([adminId]);
