@@ -608,8 +608,7 @@
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     // Redirect to the branded dashboard
-                    const baseUrl = window.location.pathname.replace(/\/$/, '');
-                    window.location.href = `${baseUrl}/admin`;
+                    window.location.href = '/portal-admin';
                 } else {
                     errorEl.textContent = data.error || 'Login failed';
                     errorEl.style.display = 'block';

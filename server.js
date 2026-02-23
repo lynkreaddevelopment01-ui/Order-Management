@@ -43,51 +43,23 @@ app.get('/super-admin/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
 });
 
-// Pattern: /portal (Unified Login/Access Entry)
-app.get('/portal', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'portal-login.html'));
-});
 
-// Internal routes for Smart Redirection
+// Pattern: /portal-admin (Staff Dashboard)
 app.get('/portal-admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
 });
+
+// Pattern: /portal-customer (Customer Ordering)
 app.get('/portal-customer', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'customer-order.html'));
 });
 
-// Pattern: /vendor-name/unique-code/admin
-app.get('/:vendorName/:uniqueCode/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
-});
 
-// Pattern: /vendor-name/unique-code
-app.get('/:vendorName/:uniqueCode', (req, res, next) => {
-    console.log('[ROUTE] Hit wildcard:', req.params.vendorName, req.params.uniqueCode);
-    // Skip if this is a super-admin route
-    if (req.params.vendorName === 'super-admin') {
-        console.log('[ROUTE] Skipping wildcard for super-admin');
-        return next();
-    }
-    res.sendFile(path.join(__dirname, 'public', 'customer-order.html'));
-});
-
-// 3. Legacy/Support Routes
-app.get('/order/:uniqueCode', (req, res) => {
-    res.redirect(`/vendor/${req.params.uniqueCode}`);
-});
-
-app.get('/vendor/:uniqueCode', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'customer-order.html'));
-});
-
-// 4. Fallbacks
 app.get('/', (req, res) => {
     if (req.tenant) {
-        // If visiting a tenant subdomain (e.g. srinivasa.localhost), go to the portal
-        return res.redirect('/portal');
+        // If visiting a tenant subdomain (e.g. srinivasa.lynkmanage.com), go to customer portal
+        return res.redirect('/portal-customer');
     }
-    // Otherwise go to the platform super-admin login
     res.redirect('/super-admin');
 });
 
@@ -100,7 +72,8 @@ app.get('/', (req, res) => {
             console.log(`   Local Mode: ${process.env.DB_TYPE === 'sqlite' ? 'SQLite' : 'PostgreSQL'}`);
             console.log(`\n   Portals:`);
             console.log(`   - Super Admin: http://localhost:${PORT}/super-admin`);
-            console.log(`   - Company Portal: http://[company].localhost:${PORT}/portal`);
+            console.log(`   - Company Staff: http://[company].localhost:${PORT}/portal-admin`);
+            console.log(`   - Customer Portal: http://[company].localhost:${PORT}/portal-customer`);
         });
     } catch (err) {
         console.error('Failed to start server:', err);

@@ -1,14 +1,14 @@
 // ===== ADMIN COMPANY DASHBOARD =====
 async function loadAdminDashboard() {
-    const content = document.getElementById('contentArea');
-    content.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+  const content = document.getElementById('contentArea');
+  content.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
 
-    try {
-        const res = await apiFetch('/admin/dashboard');
-        const data = await res.json();
-        const s = data.stats;
+  try {
+    const res = await apiFetch('/admin/dashboard');
+    const data = await res.json();
+    const s = data.stats;
 
-        content.innerHTML = `
+    content.innerHTML = `
       <div class="stats-grid fade-in-up">
         <div class="stat-card blue">
           <div class="stat-icon">📦</div>
@@ -52,7 +52,7 @@ async function loadAdminDashboard() {
             </div>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <code id="portalUrl" style="background: white; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--primary-200); font-size: 0.9rem;">${window.location.origin}/order/${s.uniqueCode}</code>
+            <code id="portalUrl" style="background: white; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--primary-200); font-size: 0.9rem;">${window.location.origin}/portal-customer</code>
             <button class="btn btn-primary btn-sm" onclick="copyPortalUrl()">Copy Link</button>
           </div>
         </div>
@@ -77,7 +77,7 @@ async function loadAdminDashboard() {
                 </thead>
                 <tbody>
                   ${data.recentOrders.length === 0 ? '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">No orders yet</td></tr>' :
-                data.recentOrders.map(o => `
+        data.recentOrders.map(o => `
                       <tr>
                         <td><span class="font-semibold">${o.order_number}</span></td>
                         <td><span class="text-muted">${o.customer_id_external || '—'}</span></td>
@@ -85,7 +85,7 @@ async function loadAdminDashboard() {
                         <td><span class="badge badge-${o.status === 'pending' ? 'warning' : o.status === 'completed' ? 'success' : 'neutral'}">${o.status}</span></td>
                       </tr>
                     `).join('')
-            }
+      }
                 </tbody>
               </table>
             </div>
@@ -109,14 +109,14 @@ async function loadAdminDashboard() {
                 </thead>
                 <tbody>
                   ${data.lowStockItems.length === 0 ? '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted);">All items well stocked!</td></tr>' :
-                data.lowStockItems.map(item => `
+        data.lowStockItems.map(item => `
                       <tr>
                         <td>${item.item_name}</td>
                         <td><span class="text-muted">${item.item_code}</span></td>
                         <td><span class="low-stock">${item.quantity}</span></td>
                       </tr>
                     `).join('')
-            }
+      }
                 </tbody>
               </table>
             </div>
@@ -124,12 +124,12 @@ async function loadAdminDashboard() {
         </div>
       </div>
     `;
-    } catch (err) {
-        content.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Error loading dashboard</h3><p>${err.message}</p></div>`;
-    }
+  } catch (err) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Error loading dashboard</h3><p>${err.message}</p></div>`;
+  }
 }
 
 function copyPortalUrl() {
-    const text = document.getElementById('portalUrl').textContent;
-    navigator.clipboard.writeText(text).then(() => showToast('Portal link copied!', 'success'));
+  const text = document.getElementById('portalUrl').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Portal link copied!', 'success'));
 }

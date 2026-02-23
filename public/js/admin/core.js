@@ -29,18 +29,15 @@ async function apiFetch(url, options = {}) {
 }
 
 function logout() {
-    const pathParts = window.location.pathname.split('/');
     let redirectUrl = '/super-admin';
 
-    // Super admin dashboard
+    // If on super admin dashboard, go to super admin login
     if (window.location.pathname.startsWith('/super-admin')) {
         redirectUrl = '/super-admin';
     }
-    // Handle logout from branded dashboard: /vendor-name/code/admin
-    else if (pathParts[3] === 'admin' && pathParts[2]) {
-        redirectUrl = `/${pathParts[1]}/${pathParts[2]}`;
-    } else if (pathParts[2] === 'admin' && pathParts[1]) {
-        redirectUrl = `/${pathParts[1]}`;
+    // If on vendor dashboard, go to the customer portal (which has the login form)
+    else if (window.location.pathname === '/portal-admin') {
+        redirectUrl = '/portal-customer';
     }
 
     localStorage.removeItem('token');
@@ -64,9 +61,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (window.location.pathname.startsWith('/super-admin')) {
             redirectUrl = '/super-admin';
         }
-        // If we are in /vendor/code/admin, redirect to /vendor/code
-        else if (window.location.pathname.endsWith('/admin')) {
-            redirectUrl = window.location.pathname.replace(/\/admin$/, '');
+        // If on vendor admin dashboard without token, redirect to customer portal for login
+        else if (window.location.pathname === '/portal-admin') {
+            redirectUrl = '/portal-customer';
         }
 
         window.location.href = redirectUrl;

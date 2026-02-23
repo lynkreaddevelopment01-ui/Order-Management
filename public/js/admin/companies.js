@@ -6,20 +6,14 @@ function getPortalUrl(username) {
 
   // Localhost support
   if (host.includes('localhost')) {
-    return `${protocol}//${username.toLowerCase()}.localhost:3000/portal`;
-  }
-
-  // Railway shared domain support (e.g., myapp.up.railway.app)
-  // Shared domains don't support sub-subdomains, so we pass vendor as a query param.
-  if (host.includes('up.railway.app')) {
-    return `${protocol}//${host}/portal?v=${username.toLowerCase()}`;
+    return `${protocol}//${username.toLowerCase()}.localhost:3000/portal-customer`;
   }
 
   // Custom Domain support (e.g., lynkmanage.com)
   const parts = host.split('.');
   // Handles both lynkmanage.com and www.lynkmanage.com
   const domain = parts.length > 2 ? parts.slice(-2).join('.') : host;
-  return `${protocol}//${username.toLowerCase()}.${domain}/portal`;
+  return `${protocol}//${username.toLowerCase()}.${domain}/portal-customer`;
 }
 
 async function loadManageAdmins() {
