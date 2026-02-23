@@ -955,9 +955,9 @@
                         <div class="history-table-row" style="display: grid; grid-template-columns: ${gridLayout}; gap: 8px; padding: 0 16px; align-items: start; font-size: 0.78rem; border: none;">
                             <div style="font-weight: 600; color: #1e293b; line-height: 1.4; word-break: break-word;">${item.item_name}</div>
                             <div style="color: #64748b; line-height: 1.4;">${item.offer_skipped ? (item.missed_offer_text || 'Offer') : (item.applied_offer || '—')}</div>
-                            <div style="text-align:center; font-weight: 700;">
-                                ${item.quantity}
-                                ${item.bonus_quantity > 0 ? `<div style="font-size:0.6rem; color:#166534; margin-top:2px;">+${item.bonus_quantity}</div>` : ''}
+                            <div style="text-align:center; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                <span>${item.quantity}</span>
+                                ${item.bonus_quantity > 0 ? `<span style="font-size:0.6rem; color:#166534; background:#dcfce7; padding:1px 4px; border-radius:3px; border:1px solid #bbf7d0;">+${item.bonus_quantity} Free</span>` : ''}
                             </div>
                             ${hasPTR ? `<div style="text-align:right; color: #64748b;">${dp ? '₹' + dp.toFixed(2) : '—'}</div>` : ''}
                             ${hasPrice ? `<div style="text-align:right; font-weight: 700; color: #0f172a;">${up ? '₹' + up.toFixed(2) : '—'}</div>` : ''}
