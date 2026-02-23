@@ -54,17 +54,8 @@ async function loadStockPage(page = 1) {
         </div>
       </div>
     </div>
-
-      <div class="card">
-        <div class="card-header"><h4>CSV Import Format</h4></div>
-        <div class="card-body">
-          <p class="text-sm text-muted" style="margin-bottom: 8px;">Your CSV file should have these columns (exactly as shown):</p>
-          <code style="font-size: 0.82rem; background: var(--neutral-900); color: var(--accent-300); padding: 12px 16px; border-radius: var(--radius-sm); display: block; border-left: 4px solid var(--accent-500);">
-            Product Name, Qty, Dist Price, MRP, Exclusive Offer
-          </code>
-          <p class="text-xs text-muted" style="margin-top: 8px;">Note: <strong>Product Name</strong> is required. <strong>Dist Price</strong> will be used as the base rate if 'Price' is missing.</p>
-        </div>
       </div>
+    </div>
   `;
 
   await fetchStockData();

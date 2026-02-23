@@ -49,20 +49,6 @@ async function loadCustomersPage(page = 1) {
         </div>
       </div>
     </div>
-
-    <div style="margin-top: 20px;">
-      <div class="card">
-        <div class="card-header"><h4>CSV Import Format</h4></div>
-        <div class="card-body">
-          <p class="text-sm text-muted" style="margin-bottom: 8px;">Your CSV file should have these common headers:</p>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-            <span class="badge badge-neutral">CustomerID</span>
-            <span class="badge badge-neutral">Customer Name</span>
-            <span class="badge badge-neutral">Address</span>
-            <span class="badge badge-neutral">Phone</span>
-          </div>
-          <p class="text-xs text-muted"><strong>Pro-tip:</strong> We also support headers like "Street Address", "Location", "Phone Number", and "Customer ID" automatically.</p>
-        </div>
       </div>
     </div>
   `;

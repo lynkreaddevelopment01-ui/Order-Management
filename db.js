@@ -39,9 +39,9 @@ if (useSqlite) {
       const stmt = sqliteDb.prepare(convertedSql);
       const p = params ? (Array.isArray(params) ? params : [params]) : [];
 
-      if (trimmedSql.startsWith('SELECT')) {
+      if (trimmedSql.startsWith('SELECT') || trimmedSql.includes('RETURNING')) {
         const rows = stmt.all(...p);
-        return { rows, rowCount: rows.length };
+        return { rows, rowCount: rows.length, insertId: rows.length > 0 ? rows[0].id : null };
       } else {
         const result = stmt.run(...p);
         return { rows: [], rowCount: result.changes, insertId: result.lastInsertRowid };

@@ -243,15 +243,15 @@ router.post('/order', async (req, res) => {
             // Combine user notes with system generated offer warnings
             const finalNotes = [notes, ...offerWarnings].filter(Boolean).join('\n');
 
-            // Use standard INSERT without RETURNING for SQLite compatibility
+            // Use RETURNING id for PostgreSQL, which our mockQuery handles for SQLite too
             const orderRes = await client.query(
-                'INSERT INTO orders (admin_id, order_number, customer_id, total_amount, status, notes) VALUES ($1, $2, $3, $4, $5, $6)',
+                'INSERT INTO orders (admin_id, order_number, customer_id, total_amount, status, notes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
                 [adminId, orderNumber, customer.id, totalAmount, 'pending', finalNotes]
             );
 
             console.log(`[ORDER] Inserted record into 'orders' table. result:`, !!orderRes);
 
-            const orderId = orderRes.insertId || (orderRes.rows && orderRes.rows[0]?.id);
+            const orderId = orderRes.insertId || (orderRes.rows && orderRes.rows.length > 0 ? orderRes.rows[0].id : null);
             console.log(`[ORDER] Retrieved Order ID: ${orderId}`);
 
             if (!orderId) {
