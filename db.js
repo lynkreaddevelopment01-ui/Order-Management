@@ -5,7 +5,9 @@ const { v4: uuidv4 } = require('uuid');
 
 let db;
 
-if (process.env.DB_TYPE === 'sqlite') {
+const useSqlite = process.env.DB_TYPE === 'sqlite';
+
+if (useSqlite) {
   const Database = require('better-sqlite3');
   const DB_PATH = path.join(__dirname, 'data', 'medical_orders.db');
 
