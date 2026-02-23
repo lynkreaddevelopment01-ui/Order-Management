@@ -105,16 +105,16 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
             doc.text(dp ? dp.toFixed(2) : '—', 250, y);
             doc.text(mrp ? mrp.toFixed(2) : '—', 310, y, { align: 'right', width: 50 });
 
-            // Clean table: only successful offers shown here
-            doc.text(item.applied_offer || '—', 380, y, { width: 110 });
-            doc.text(item.bonus_quantity > 0 ? `+${item.bonus_quantity}` : '—', 510, y);
-
+            // Clean table: display warning in offer column if skipped
             if (item.offer_skipped) {
-                y += 15;
-                doc.fillColor('#ef4444').fontSize(7.5).text('Low stock offer not applied', 60, y);
-                doc.fillColor('#000000').fontSize(8.5);
+                doc.fillColor('#ef4444').text('Low stock-No offer', 380, y, { width: 110 });
+                doc.fillColor('#000000');
                 skippedOffers.push(item.item_name);
+            } else {
+                doc.text(item.applied_offer || '—', 380, y, { width: 110 });
             }
+
+            doc.text(item.bonus_quantity > 0 ? `+${item.bonus_quantity}` : '—', 510, y);
             y += 20;
         });
 
@@ -450,7 +450,12 @@ router.get('/all-orders-excel', authenticateToken, requireAdmin, async (req, res
                 row.getCell(5).value = item.dist_price || 0;
                 row.getCell(6).value = item.mrp || 0;
                 row.getCell(7).value = item.bonus_quantity || 0;
-                row.getCell(8).value = item.applied_offer || '—';
+                if (item.offer_skipped) {
+                    row.getCell(8).value = 'Low stock - not applied';
+                    row.getCell(8).font = { color: { argb: 'FFFF0000' } };
+                } else {
+                    row.getCell(8).value = item.applied_offer || '—';
+                }
                 rowNum++;
             }
         }
