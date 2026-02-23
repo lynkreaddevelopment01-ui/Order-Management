@@ -218,8 +218,11 @@ if (process.env.DB_TYPE === 'sqlite') {
     pool,
     query: (text, params) => pool.query(text, params),
     initialize: async () => {
-      const client = await pool.connect();
+      console.log('🔄 Attempting to connect to PostgreSQL...');
+      let client;
       try {
+        client = await pool.connect();
+        console.log('✅ Connected to PostgreSQL pool');
         await client.query('BEGIN');
         // (PG table creation logic remains here as in previous db.js...)
         // For brevity, I'm assuming you have the full PG init logic or I can keep the existing one.
