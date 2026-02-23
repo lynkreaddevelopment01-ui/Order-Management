@@ -10,9 +10,9 @@ function getPortalUrl(username) {
   }
 
   // Railway shared domain support (e.g., myapp.up.railway.app)
-  // Shared domains don't support sub-subdomains, so we stay on the same domain.
+  // Shared domains don't support sub-subdomains, so we pass vendor as a query param.
   if (host.includes('up.railway.app')) {
-    return `${protocol}//${host}/portal`;
+    return `${protocol}//${host}/portal?v=${username.toLowerCase()}`;
   }
 
   // Custom Domain support (e.g., yourdomain.com)

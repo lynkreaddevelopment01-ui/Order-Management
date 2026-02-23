@@ -21,6 +21,12 @@ async function tenantHandler(req, res, next) {
         }
     }
 
+    // Fallback: If no subdomain is found, check for 'v' query parameter
+    // (Crucial for Railway shared domains like up.railway.app)
+    if (!subdomain && req.query.v) {
+        subdomain = req.query.v;
+    }
+
     if (subdomain && subdomain !== 'www' && subdomain !== 'admin') {
         try {
             // Using a case-insensitive check for the subdomain (which maps to username/vendorName)
