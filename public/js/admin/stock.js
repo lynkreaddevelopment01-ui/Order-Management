@@ -36,7 +36,7 @@ async function loadStockPage(page = 1) {
                 <th>Category</th>
                 <th>Unit</th>
                 <th>Qty</th>
-                <th>Dist.P</th>
+                <th>PTR rate</th>
                 <th>MRP</th>
                 <th>Offer</th>
                 <th>Actions</th>

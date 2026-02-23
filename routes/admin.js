@@ -107,7 +107,7 @@ router.post('/stock/import', authenticateToken, requireAdmin, upload.single('csv
             const quantity = parseInt(item.Qty || item.quantity || item.Quantity || item.qty || item.QTY || 0) || 0;
 
             // Pricing Logic
-            const distPrice = parseFloat(item['Dist Price'] || item['Dist.Price'] || item.dist_price || item.DistPrice || 0) || 0;
+            const distPrice = parseFloat(item['PTR rate'] || item['PTR Rate'] || item['Dist Price'] || item['Dist.Price'] || item.dist_price || item.DistPrice || 0) || 0;
             const mrp = parseFloat(item.mrp || item.MRP || item['Max Retail Price'] || 0) || 0;
 
             // Base price falls back to Dist Price if not provided

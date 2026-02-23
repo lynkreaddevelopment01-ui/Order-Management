@@ -167,7 +167,7 @@ async function viewOrder(id) {
       <div id="financialSummary" style="margin-bottom:12px;"></div>
       <div class="table-container" style="border:1px solid var(--neutral-200);border-radius:var(--radius-md);">
         <table>
-          <thead><tr><th>Item</th><th>Qty</th><th>Dist.P</th><th>MRP</th></tr></thead>
+          <thead><tr><th>Item</th><th>Qty</th><th>PTR rate</th><th>MRP</th></tr></thead>
           <tbody>
             ${items.map(it => `
               <tr class="${it.is_offer_item ? 'has-offer' : ''}">
@@ -194,7 +194,7 @@ async function viewOrder(id) {
     if (sumDist > 0 || sumMRP > 0) {
       document.getElementById('financialSummary').innerHTML = `
             <div style="padding:10px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; display:flex; gap:20px;">
-                ${sumDist > 0 ? `<div><div style="font-size:0.7rem; color:#64748b;">Total Dist.P</div><div style="font-weight:700;">₹${sumDist.toFixed(2)}</div></div>` : ''}
+                ${sumDist > 0 ? `<div><div style="font-size:0.7rem; color:#64748b;">Total PTR value</div><div style="font-weight:700;">₹${sumDist.toFixed(2)}</div></div>` : ''}
                 ${sumMRP > 0 ? `<div><div style="font-size:0.7rem; color:#64748b;">Total MRP</div><div style="font-weight:700;">₹${sumMRP.toFixed(2)}</div></div>` : ''}
             </div>
         `;

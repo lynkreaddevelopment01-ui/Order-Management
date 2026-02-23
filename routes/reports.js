@@ -74,7 +74,7 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
         doc.text('#', 40, tableTop);
         doc.text('Item', 60, tableTop);
         doc.text('Qty', 210, tableTop);
-        doc.text('Dist.P', 250, tableTop);
+        doc.text('PTR rate', 250, tableTop);
         doc.text('MRP', 310, tableTop, { align: 'right', width: 50 });
         doc.text('Offer', 380, tableTop);
         doc.text('Bonus', 500, tableTop);
@@ -137,9 +137,9 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
             if (skippedOffers.length > 0) {
                 doc.moveDown(1);
                 doc.fontSize(10).font('Helvetica-Bold').fillColor('#ef4444').text('OFFER STATUS:');
-                doc.fontSize(9).font('Helvetica').text('The following offer is not applied due to low stock:');
+                doc.fontSize(9).font('Helvetica').text('Offer Not applied due to Low stock:');
                 skippedOffers.forEach(name => {
-                    doc.text(`  • ${name}`);
+                    doc.text(`• ${name}`);
                 });
                 doc.fillColor('#000000');
             }
@@ -206,7 +206,7 @@ router.get('/order-excel/:id', authenticateToken, requireAdmin, async (req, res)
 
         // Column headers
         const headerRow = sheet.getRow(10);
-        ['#', 'Item Name', 'Quantity', 'Dist. Price', 'MRP', 'Bonus Qty', 'Offer Applied'].forEach((h, i) => {
+        ['#', 'Item Name', 'Quantity', 'PTR rate', 'MRP', 'Bonus Qty', 'Offer Applied'].forEach((h, i) => {
             headerRow.getCell(i + 1).value = h;
             headerRow.getCell(i + 1).style = subHeaderStyle;
         });
@@ -251,10 +251,10 @@ router.get('/order-excel/:id', authenticateToken, requireAdmin, async (req, res)
         if (skippedOffers.length > 0) {
             sheet.getCell(`A${nextRow}`).value = 'OFFER STATUS:';
             sheet.getCell(`A${nextRow}`).font = { bold: true, color: { argb: 'FFFF0000' } };
-            sheet.getCell(`B${nextRow}`).value = 'offer is not applied due to low stock:';
+            sheet.getCell(`B${nextRow}`).value = 'Offer Not applied due to Low stock:';
             nextRow++;
             skippedOffers.forEach(o => {
-                sheet.getCell(`B${nextRow}`).value = `• Offer (${o.offer}) for ${o.name}`;
+                sheet.getCell(`B${nextRow}`).value = `• ${o.name}`;
                 nextRow++;
             });
             nextRow++;
@@ -440,7 +440,7 @@ router.get('/all-orders-excel', authenticateToken, requireAdmin, async (req, res
 
         // Detailed Items Sheet
         const detailSheet = workbook.addWorksheet('Order Details');
-        const detailHeaders = ['Order No', 'Customer', 'Item', 'Qty', 'Dist. Price', 'MRP', 'Bonus', 'Applied Offer'];
+        const detailHeaders = ['Order No', 'Customer', 'Item', 'Qty', 'PTR rate', 'MRP', 'Bonus', 'Applied Offer'];
         const detailHeaderRow = detailSheet.getRow(1);
         detailHeaders.forEach((h, i) => {
             detailHeaderRow.getCell(i + 1).value = h;
