@@ -94,6 +94,7 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
                 y = 50;
             }
             doc.text(`${i + 1}`, 40, y);
+            const itemHeight = doc.heightOfString(item.item_name, { width: 140 });
             doc.text(item.item_name, 60, y, { width: 140 });
             doc.text(`${item.quantity}`, 210, y);
 
@@ -105,21 +106,24 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
             doc.text(dp ? dp.toFixed(2) : '—', 250, y);
             doc.text(mrp ? mrp.toFixed(2) : '—', 310, y, { align: 'right', width: 50 });
 
+            let extraY = 0;
             // Clean table: display intended offer + warning if skipped
             if (item.offer_skipped) {
                 const offerText = item.missed_offer_text || 'Offer';
                 doc.text(offerText, 380, y, { width: 110 });
-                y += 10;
-                doc.fillColor('#ef4444').fontSize(7).text('(Low stock - offer not applied)', 380, y, { width: 110 });
+                doc.fillColor('#ef4444').fontSize(7).text('(Low stock - offer not applied)', 380, y + 10, { width: 110 });
                 doc.fillColor('#000000').fontSize(8.5);
-                y -= 10; // Keep line alignment for other columns
+                extraY = 18;
                 skippedOffers.push(item.item_name);
             } else {
                 doc.text(item.applied_offer || '—', 380, y, { width: 110 });
+                extraY = 15;
             }
 
             doc.text(item.bonus_quantity > 0 ? `+${item.bonus_quantity}` : '—', 510, y);
-            y += 20;
+
+            // Increment y based on the tallest element (item name or offer block)
+            y += Math.max(itemHeight + 5, extraY);
         });
 
         // Totals for Dist/MRP

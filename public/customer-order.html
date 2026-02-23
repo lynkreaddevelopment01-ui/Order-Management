@@ -924,13 +924,21 @@
             let totalPriceSum = 0;
             let totalDist = 0;
 
+            const hasPTR = items.some(it => parseFloat(it.dist_price) > 0);
+            const hasPrice = items.some(it => parseFloat(it.unit_price) > 0);
+
+            // Dynamic grid columns based on price availability
+            let gridLayout = `1.5fr 1fr 0.5fr`;
+            if (hasPTR) gridLayout += ` 0.8fr`;
+            if (hasPrice) gridLayout += ` 0.8fr`;
+
             let html = `
-                <div class="history-table-header" style="display: grid; grid-template-columns: 1.8fr 1.2fr 0.6fr 1fr 1fr; gap: 8px; font-size: 0.6rem; padding: 12px 16px; background: #f1f5f9; position: sticky; top: 0; z-index: 2;">
+                <div class="history-table-header" style="display: grid; grid-template-columns: ${gridLayout}; gap: 8px; font-size: 0.6rem; padding: 12px 16px; background: #f1f5f9; position: sticky; top: 0; z-index: 2;">
                     <span>ITEM</span>
                     <span>OFFER</span>
                     <span style="text-align:center;">QTY</span>
-                    <span style="text-align:right;">PTR RATE</span>
-                    <span style="text-align:right;">PRICE</span>
+                    ${hasPTR ? `<span style="text-align:right;">PTR RATE</span>` : ''}
+                    ${hasPrice ? `<span style="text-align:right;">PRICE</span>` : ''}
                 </div>
             `;
 
@@ -942,37 +950,38 @@
                 totalPriceSum += rowTotal;
                 totalDist += (dp * item.quantity);
 
-                let offerColumnContent = `<span style="color: #64748b;">${item.applied_offer || '—'}</span>`;
-                if (item.offer_skipped) {
-                    offerColumnContent = `
-                        <div style="color: #64748b;">${item.missed_offer_text || 'Offer'}</div>
-                        <div style="font-size: 0.55rem; color: #dc2626; font-weight: 700; line-height: 1.2;">(Low stock - offer not applied)</div>
-                    `;
-                }
-
                 return `
-                    <div class="history-table-row" style="display: grid; grid-template-columns: 1.8fr 1.2fr 0.6fr 1fr 1fr; gap: 8px; padding: 14px 16px; align-items: center; border-bottom: 1px solid #f1f5f9; font-size: 0.78rem;">
-                        <div style="font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.item_name}">${item.item_name}</div>
-                        <div style="display: flex; align-items: center;">${offerColumnContent}</div>
-                        <div style="text-align:center; font-weight: 700;">
-                            ${item.quantity}
-                            ${item.bonus_quantity > 0 ? `<div style="font-size:0.6rem; color:#166534; margin-top:1px;">+${item.bonus_quantity}</div>` : ''}
+                    <div style="border-bottom: 1px solid #f1f5f9; padding: 12px 0;">
+                        <div class="history-table-row" style="display: grid; grid-template-columns: ${gridLayout}; gap: 8px; padding: 0 16px; align-items: start; font-size: 0.78rem; border: none;">
+                            <div style="font-weight: 600; color: #1e293b; line-height: 1.4; word-break: break-word;">${item.item_name}</div>
+                            <div style="color: #64748b; line-height: 1.4;">${item.offer_skipped ? (item.missed_offer_text || 'Offer') : (item.applied_offer || '—')}</div>
+                            <div style="text-align:center; font-weight: 700;">
+                                ${item.quantity}
+                                ${item.bonus_quantity > 0 ? `<div style="font-size:0.6rem; color:#166534; margin-top:2px;">+${item.bonus_quantity}</div>` : ''}
+                            </div>
+                            ${hasPTR ? `<div style="text-align:right; color: #64748b;">${dp ? '₹' + dp.toFixed(2) : '—'}</div>` : ''}
+                            ${hasPrice ? `<div style="text-align:right; font-weight: 700; color: #0f172a;">${up ? '₹' + up.toFixed(2) : '—'}</div>` : ''}
                         </div>
-                        <div style="text-align:right; color: #64748b;">${dp ? '₹' + dp.toFixed(2) : '—'}</div>
-                        <div style="text-align:right; font-weight: 700; color: #0f172a;">${up ? '₹' + up.toFixed(2) : '—'}</div>
+                        ${item.offer_skipped ? `
+                            <div style="padding: 4px 16px 0 16px; font-size: 0.68rem; color: #dc2626; font-weight: 700; font-style: italic;">
+                                (Low stock - offer not applied)
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             }).join('');
 
-            // Add Sum Row
-            html += `
-                <div style="display: flex; justify-content: flex-end; padding: 12px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; gap: 24px;">
-                    <div style="text-align: right;">
-                        <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block;">Grand Sum</span>
-                        <span style="font-size: 1rem; font-weight: 800; color: #0f172a;">₹${totalPriceSum.toFixed(2)}</span>
+            // Add Sum Row ONLY if price exists
+            if (hasPrice) {
+                html += `
+                    <div style="display: flex; justify-content: flex-end; padding: 12px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; gap: 24px;">
+                        <div style="text-align: right;">
+                            <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block;">Grand Sum</span>
+                            <span style="font-size: 1rem; font-weight: 800; color: #0f172a;">₹${totalPriceSum.toFixed(2)}</span>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
 
             list.innerHTML = html;
 

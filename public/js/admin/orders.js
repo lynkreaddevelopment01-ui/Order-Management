@@ -164,28 +164,44 @@ async function viewOrder(id) {
       </div>
 
       ${o.customer_address ? `<div class="text-sm" style="margin-bottom:16px;"><span class="text-muted">Address:</span> ${o.customer_address}${o.customer_city ? ', ' + o.customer_city : ''}</div>` : ''}
+
       <div id="financialSummary" style="margin-bottom:12px;"></div>
       <div class="table-container" style="border:1px solid var(--neutral-200);border-radius:var(--radius-md);">
-        <table>
-          <thead><tr><th>Item</th><th>Offer</th><th>Qty</th><th>PTR rate</th><th>MRP</th></tr></thead>
+        <table style="width:100%; border-collapse: collapse;">
+          <thead style="background: var(--neutral-50);">
+            <tr>
+              <th style="padding: 10px 8px; text-align: left;">Item</th>
+              ${items.some(it => it.applied_offer || it.offer_skipped) ? '<th style="padding: 10px 8px; text-align: left;">Offer</th>' : ''}
+              <th style="padding: 10px 8px; text-align: left;">Qty</th>
+              ${items.some(it => parseFloat(it.dist_price) > 0) ? '<th style="padding: 10px 8px; text-align: left;">PTR rate</th>' : ''}
+              ${items.some(it => parseFloat(it.mrp) > 0) ? '<th style="padding: 10px 8px; text-align: left;">MRP</th>' : ''}
+            </tr>
+          </thead>
           <tbody>
-            ${items.map(it => `
-              <tr class="${it.is_offer_item ? 'has-offer' : ''}">
-                <td style="font-weight:600;">${it.item_name}</td>
-                <td>
-                  ${it.applied_offer || '—'}
-                  ${it.offer_skipped ? `<div style="font-size:0.65rem; color:#dc2626; font-weight:700;">${it.missed_offer_text || 'Offer'} (Low stock - offer not applied)</div>` : ''}
-                </td>
-                <td>${it.quantity} ${it.bonus_quantity > 0 ? `<span style="color:#166534; font-weight:700;">+${it.bonus_quantity}</span>` : ''}</td>
-                <td>${it.dist_price ? '₹' + parseFloat(it.dist_price).toFixed(2) : '—'}</td>
-                <td>${it.mrp ? '₹' + parseFloat(it.mrp).toFixed(2) : '—'}</td>
-              </tr>
-            `).join('')}
+            ${items.map(it => {
+      const hasOfferCol = items.some(i => i.applied_offer || i.offer_skipped);
+      const hasPTRCol = items.some(i => parseFloat(i.dist_price) > 0);
+      const hasMRPCol = items.some(i => parseFloat(i.mrp) > 0);
+
+      return `
+                <tr style="border-bottom: 1px solid var(--neutral-100);">
+                  <td style="padding: 12px 8px;">
+                    <div style="font-weight:600; line-height:1.4; word-break:break-word;">${it.item_name}</div>
+                    ${it.offer_skipped ? `<div style="font-size:0.65rem; color:#dc2626; font-weight:700; margin-top:4px; font-style:italic;">(Low stock - offer not applied)</div>` : ''}
+                  </td>
+                  ${hasOfferCol ? `<td style="padding: 12px 8px;">${it.offer_skipped ? (it.missed_offer_text || 'Offer') : (it.applied_offer || '—')}</td>` : ''}
+                  <td style="padding: 12px 8px;">
+                    <div style="font-weight:700;">${it.quantity}</div>
+                    ${it.bonus_quantity > 0 ? `<div style="font-size:0.65rem; color:#166534; font-weight:700;">+${it.bonus_quantity} Bonus</div>` : ''}
+                  </td>
+                  ${hasPTRCol ? `<td style="padding: 12px 8px;">${parseFloat(it.dist_price) > 0 ? '₹' + parseFloat(it.dist_price).toFixed(2) : '—'}</td>` : ''}
+                  ${hasMRPCol ? `<td style="padding: 12px 8px;">${parseFloat(it.mrp) > 0 ? '₹' + parseFloat(it.mrp).toFixed(2) : '—'}</td>` : ''}
+                </tr>
+                `;
+    }).join('')}
           </tbody>
         </table>
       </div>
-
-      ${o.notes ? `<div style="margin-top:12px;padding:10px;background:var(--neutral-50);border-radius:var(--radius-sm);"><span class="text-muted text-sm">Notes:</span> <span class="text-sm">${o.notes}</span></div>` : ''}
     `;
 
     // Calculate totals for the summary
