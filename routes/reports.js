@@ -107,7 +107,7 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
 
             // Clean table: display warning in offer column if skipped
             if (item.offer_skipped) {
-                doc.fillColor('#ef4444').text('Low stock-No offer', 380, y, { width: 110 });
+                doc.fillColor('#ef4444').text('Low stock - offer not applied', 380, y, { width: 110 });
                 doc.fillColor('#000000');
                 skippedOffers.push(item.item_name);
             } else {
@@ -231,7 +231,7 @@ router.get('/order-excel/:id', authenticateToken, requireAdmin, async (req, res)
 
             // Clean table: only show successful offers
             if (item.offer_skipped) {
-                row.getCell(7).value = 'Low stock - not applied';
+                row.getCell(7).value = 'Low stock - offer not applied';
                 row.getCell(7).font = { color: { argb: 'FFFF0000' } };
                 skippedOffers.push({ name: item.item_name, offer: item.missed_offer_text });
             } else {
@@ -451,7 +451,7 @@ router.get('/all-orders-excel', authenticateToken, requireAdmin, async (req, res
                 row.getCell(6).value = item.mrp || 0;
                 row.getCell(7).value = item.bonus_quantity || 0;
                 if (item.offer_skipped) {
-                    row.getCell(8).value = 'Low stock - not applied';
+                    row.getCell(8).value = 'Low stock - offer not applied';
                     row.getCell(8).font = { color: { argb: 'FFFF0000' } };
                 } else {
                     row.getCell(8).value = item.applied_offer || '—';
