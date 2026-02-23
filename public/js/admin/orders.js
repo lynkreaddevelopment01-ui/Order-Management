@@ -219,10 +219,21 @@ async function viewOrder(id) {
           </tbody>
         </table>
       </div>
-
-      ${o.notes ? `<div style="margin-top:12px;padding:10px;background:var(--neutral-50);border-radius:var(--radius-sm);"><span class="text-muted text-sm">Notes:</span> <span class="text-sm">${o.notes}</span></div>` : ''}
     `;
 
+    // Clean redundant notes (automated warnings)
+    let userNote = o.notes || '';
+    const autoPattern = /Offer\s*\(.*?\)\s*for\s*".*?"\s*could\s*not\s*be\s*applied\s*due\s*to\s*low\s*stock\.\s*Team\s*will\s*contact\s*you\./gi;
+    userNote = userNote.replace(autoPattern, '').split('\n').map(s => s.trim()).filter(Boolean).join('\n');
+
+    if (userNote) {
+      html += `
+            <div style="margin-top: 12px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+                <span style="font-weight:700; color:#475569; display:block; margin-bottom:8px; font-size:0.65rem; text-transform:uppercase;">Customer Note</span>
+                <div style="font-size: 0.85rem; color: #1e293b; line-height: 1.5; white-space: pre-line;">${userNote}</div>
+            </div>
+        `;
+    }
     document.getElementById('orderDetailContent').innerHTML = html;
 
     // Calculate totals for summary

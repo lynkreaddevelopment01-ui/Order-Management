@@ -147,8 +147,8 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
 
             // Clean legacy notes
             let cleanNote = order.notes || '';
-            const legacyPattern = /Offer \(.*?\) for ".*?" could not be applied due to low stock\. Team will contact you\./g;
-            cleanNote = cleanNote.replace(legacyPattern, '').trim();
+            const pattern = /Offer\s*\(.*?\)\s*for\s*".*?"\s*could\s*not\s*be\s*applied\s*due\s*to\s*low\s*stock\.\s*Team\s*will\s*contact\s*you\./gi;
+            cleanNote = cleanNote.replace(pattern, '').split('\n').map(s => s.trim()).filter(Boolean).join('\n');
 
             if (cleanNote) {
                 doc.moveDown(1);
@@ -256,10 +256,11 @@ router.get('/order-excel/:id', authenticateToken, requireAdmin, async (req, res)
         sumRow.getCell(5).value = totalMRP || 0;
         sumRow.font = { bold: true };
         let cleanNote = order.notes || '';
-        const legacyPattern = /Offer \(.*?\) for ".*?" could not be applied due to low stock\. Team will contact you\./g;
-        cleanNote = cleanNote.replace(legacyPattern, '').trim();
+        const pattern = /Offer\s*\(.*?\)\s*for\s*".*?"\s*could\s*not\s*be\s*applied\s*due\s*to\s*low\s*stock\.\s*Team\s*will\s*contact\s*you\./gi;
+        cleanNote = cleanNote.replace(pattern, '').split('\n').map(s => s.trim()).filter(Boolean).join('\n');
 
         if (cleanNote) {
+            nextRow++; // Move to the next row for the note
             sheet.getCell(`A${nextRow}`).value = 'CUSTOMER NOTE:';
             sheet.getCell(`A${nextRow}`).font = { bold: true };
             sheet.getCell(`B${nextRow}`).value = cleanNote;
