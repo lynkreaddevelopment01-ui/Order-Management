@@ -134,20 +134,25 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
             doc.y = y;
             if (doc.y > 650) doc.addPage();
 
+            // Clean legacy notes
+            let cleanNote = order.notes || '';
+            const legacyPattern = /Offer \(.*?\) for ".*?" could not be applied due to low stock\. Team will contact you\./g;
+            cleanNote = cleanNote.replace(legacyPattern, '').trim();
+
             if (skippedOffers.length > 0) {
                 doc.moveDown(1);
-                doc.fontSize(10).font('Helvetica-Bold').fillColor('#ef4444').text('OFFER STATUS:');
-                doc.fontSize(9).font('Helvetica').text('Offer Not applied due to Low stock:');
+                doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e293b').text('Customer Note');
+                doc.fontSize(9).font('Helvetica').fillColor('#ef4444').text('Offer Not applied due to Low stock:');
                 skippedOffers.forEach(name => {
-                    doc.text(`• ${name}`);
+                    doc.text(`- ${name} - Team will contact you`);
                 });
                 doc.fillColor('#000000');
             }
 
-            if (order.notes) {
-                doc.moveDown(1);
-                doc.fontSize(10).font('Helvetica-Bold').text('Notes:');
-                doc.fontSize(9).font('Helvetica').text(order.notes);
+            if (cleanNote) {
+                doc.moveDown(0.5);
+                if (skippedOffers.length === 0) doc.fontSize(10).font('Helvetica-Bold').text('Customer Note');
+                doc.fontSize(9).font('Helvetica').text(cleanNote);
             }
         }
 
@@ -249,21 +254,25 @@ router.get('/order-excel/:id', authenticateToken, requireAdmin, async (req, res)
         sumRow.font = { bold: true };
         nextRow += 2;
         if (skippedOffers.length > 0) {
-            sheet.getCell(`A${nextRow}`).value = 'OFFER STATUS:';
-            sheet.getCell(`A${nextRow}`).font = { bold: true, color: { argb: 'FFFF0000' } };
+            sheet.getCell(`A${nextRow}`).value = 'CUSTOMER NOTE:';
+            sheet.getCell(`A${nextRow}`).font = { bold: true };
             sheet.getCell(`B${nextRow}`).value = 'Offer Not applied due to Low stock:';
             nextRow++;
             skippedOffers.forEach(o => {
-                sheet.getCell(`B${nextRow}`).value = `• ${o.name}`;
+                sheet.getCell(`B${nextRow}`).value = `- ${o.name} - Team will contact you`;
                 nextRow++;
             });
             nextRow++;
         }
 
-        if (order.notes) {
-            sheet.getCell(`A${nextRow}`).value = 'NOTES:';
+        let cleanNote = order.notes || '';
+        const legacyPattern = /Offer \(.*?\) for ".*?" could not be applied due to low stock\. Team will contact you\./g;
+        cleanNote = cleanNote.replace(legacyPattern, '').trim();
+
+        if (cleanNote) {
+            sheet.getCell(`A${nextRow}`).value = 'CUSTOMER NOTE:';
             sheet.getCell(`A${nextRow}`).font = { bold: true };
-            sheet.getCell(`B${nextRow}`).value = order.notes;
+            sheet.getCell(`B${nextRow}`).value = cleanNote;
         }
 
         // Column widths

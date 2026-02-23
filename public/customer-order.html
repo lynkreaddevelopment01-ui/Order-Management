@@ -461,7 +461,7 @@
     <!-- Order Detail Modal (Secondary Popup) -->
     <div class="modal-overlay" id="orderDetailModal" style="z-index: 3000;">
         <div class="modal"
-            style="max-width:480px; transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            style="max-width:560px; transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
             <div class="modal-header">
                 <div>
                     <h3 id="detailOrderNumber">Order Details</h3>
@@ -472,11 +472,7 @@
                     onclick="document.getElementById('orderDetailModal').classList.remove('active')">&times;</button>
             </div>
             <div class="modal-body" style="padding: 20px;">
-                <div class="history-item-details" style="margin-top:0;">
-                    <div class="history-table-header">
-                        <span>ITEM</span>
-                        <span style="text-align:right;">QTY</span>
-                    </div>
+                <div class="history-item-details" style="margin-top:0; border:none;">
                     <div id="detailItemsList">
                         <!-- Detail items here -->
                     </div>
@@ -925,66 +921,77 @@
             const items = order.items || [];
             const skipped = items.filter(item => item.offer_skipped);
 
+            let totalPriceSum = 0;
             let totalDist = 0;
-            let totalMRP = 0;
 
-            list.innerHTML = items.map(item => {
+            let html = `
+                <div class="history-table-header" style="display: grid; grid-template-columns: 1.8fr 1.2fr 0.6fr 1fr 1fr; gap: 8px; font-size: 0.6rem; padding: 12px 16px; background: #f1f5f9; position: sticky; top: 0; z-index: 2;">
+                    <span>ITEM</span>
+                    <span>OFFER</span>
+                    <span style="text-align:center;">QTY</span>
+                    <span style="text-align:right;">PTR RATE</span>
+                    <span style="text-align:right;">PRICE</span>
+                </div>
+            `;
+
+            html += items.map(item => {
                 const dp = parseFloat(item.dist_price) || 0;
-                const mrp = parseFloat(item.mrp) || 0;
+                const up = parseFloat(item.unit_price) || 0;
+                const rowTotal = up * item.quantity;
+
+                totalPriceSum += rowTotal;
                 totalDist += (dp * item.quantity);
-                totalMRP += (mrp * item.quantity);
 
                 return `
-                    <div class="history-table-row" style="display: grid; grid-template-columns: 1fr 80px; padding: 12px 16px; background: white; border-bottom: 1px solid #f8fafc; align-items: start; gap: 12px;">
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <span class="item-name" style="font-weight: 600; color: #1e293b; line-height: 1.4;">${item.item_name}</span>
-                            ${(dp || mrp) ? `
-                                <div style="display: flex; gap: 12px; font-size: 0.75rem; color: #64748b; margin-top: 2px;">
-                                    ${dp ? `<span>PTR rate: <span style="font-weight:600; color: #334155;">₹${dp.toFixed(2)}</span></span>` : ''}
-                                    ${mrp ? `<span>MRP: <span style="font-weight:600; color: #334155;">₹${mrp.toFixed(2)}</span></span>` : ''}
-                                </div>
-                            ` : ''}
+                    <div class="history-table-row" style="display: grid; grid-template-columns: 1.8fr 1.2fr 0.6fr 1fr 1fr; gap: 8px; padding: 12px 16px; align-items: center; border-bottom: 1px solid #f1f5f9; font-size: 0.78rem;">
+                        <div style="font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.item_name}">${item.item_name}</div>
+                        <div style="font-size: 0.7rem; color: #64748b;">${item.applied_offer || '—'}</div>
+                        <div style="text-align:center; font-weight: 700;">
+                            ${item.quantity}
+                            ${item.bonus_quantity > 0 ? `<div style="font-size:0.6rem; color:#166534; margin-top:1px;">+${item.bonus_quantity}</div>` : ''}
                         </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-                            <span class="item-qty" style="color: #0f172a; font-weight: 700; font-size: 0.95rem;">${item.quantity}</span>
-                            ${item.bonus_quantity > 0 ? `<span style="font-size: 0.65rem; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-weight: 700;">+${item.bonus_quantity} Bonus</span>` : ''}
-                        </div>
+                        <div style="text-align:right; color: #64748b;">${dp ? '₹' + dp.toFixed(2) : '—'}</div>
+                        <div style="text-align:right; font-weight: 700; color: #0f172a;">${up ? '₹' + up.toFixed(2) : '—'}</div>
                     </div>
                 `;
-            }).join('') || '<div style="padding:32px; text-align:center; color:#94a3b8; font-size:0.85rem;">No items found</div>';
+            }).join('');
+
+            // Add Sum Row
+            html += `
+                <div style="display: flex; justify-content: flex-end; padding: 12px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; gap: 24px;">
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block;">Grand Sum</span>
+                        <span style="font-size: 1rem; font-weight: 800; color: #0f172a;">₹${totalPriceSum.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+
+            list.innerHTML = html;
 
             const notesEl = document.getElementById('detailOrderNotes');
             let notesHtml = '';
 
-            // Add Financial Summary if prices exist
-            if (totalDist > 0 || totalMRP > 0) {
+            // Clean existing notes from automated patterns to avoid duplicates
+            let userNote = order.notes || '';
+            const autoPattern = /Offer \(.*?\) for ".*?" could not be applied due to low stock\. Team will contact you\./g;
+            userNote = userNote.replace(autoPattern, '').trim();
+
+            if (skipped.length > 0 || userNote) {
                 notesHtml += `
-                    <div style="margin-bottom: 16px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-                        <span style="font-weight:700; color:#475569; display:block; margin-bottom:6px; font-size:0.65rem; text-transform:uppercase;">Financial Summary</span>
-                        <div style="display: flex; gap: 24px; font-size: 0.85rem;">
-                            ${totalDist > 0 ? `<div><div style="font-size: 0.7rem; color: #94a3b8;">Total PTR value</div><div style="font-weight: 700; color: #334155;">₹${totalDist.toFixed(2)}</div></div>` : ''}
-                            ${totalMRP > 0 ? `<div><div style="font-size: 0.7rem; color: #94a3b8;">Total MRP value</div><div style="font-weight: 700; color: #334155;">₹${totalMRP.toFixed(2)}</div></div>` : ''}
+                    <div style="margin-top: 12px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+                        <span style="font-weight:700; color:#475569; display:block; margin-bottom:8px; font-size:0.65rem; text-transform:uppercase;">Customer Note</span>
+                        <div style="font-size: 0.85rem; color: #1e293b; line-height: 1.5;">
+                            ${userNote ? `<div style="margin-bottom: 12px;">${userNote}</div>` : ''}
+                            ${skipped.length > 0 ? `
+                                <div style="color: #991b1b; font-weight: 600;">Offer Not applied due to Low stock:</div>
+                                <div style="margin: 4px 0;">
+                                    ${skipped.map(s => `- ${s.item_name} - Offer (${s.missed_offer_text || 'Active Offer'})`).join('<br>')}
+                                </div>
+                                <div style="margin-top: 8px; font-weight: 700; color: #b91c1c;">Team will contact you</div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
-            }
-
-            if (skipped.length > 0) {
-                notesHtml += `
-                    <div style="margin-bottom: 16px; padding: 12px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px;">
-                        <span style="font-weight:700; color:#be123c; display:block; margin-bottom:6px; font-size:0.65rem; text-transform:uppercase;">Offer Status</span>
-                        <div style="font-size: 0.75rem; color: #991b1b; font-weight: 500;">
-                            Offer Not applied due to Low stock:
-                            <div style="margin-top:4px;">
-                                ${skipped.map(s => `• ${s.item_name} <br>`).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            if (order.notes) {
-                notesHtml += `<span style="font-weight:700; color:#475569; display:block; margin-bottom:2px; font-size:0.65rem; text-transform:uppercase;">Customer Note</span><div style="font-size:0.8rem; color:#1e293b;">${order.notes}</div>`;
             }
 
             if (notesHtml) {

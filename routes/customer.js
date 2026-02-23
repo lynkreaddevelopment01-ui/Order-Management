@@ -195,10 +195,8 @@ router.post('/order', async (req, res) => {
                 let offerSkipped = 0;
                 let missedOfferText = null;
 
-                // Second: Check if bonus stock is available. If not, proceed without offer and add warning.
                 if (bonusQty > 0 && stockItem.quantity < (qty + bonusQty)) {
                     console.warn(`[ORDER] Offer stock low for ${stockItem.item_name}. (Req: ${qty}, Bonus: ${bonusQty}, Avail: ${stockItem.quantity})`);
-                    offerWarnings.push(`Offer (${stockItem.offer_text}) for "${stockItem.item_name}" could not be applied due to low stock. Team will contact you.`);
                     offerSkipped = 1;
                     missedOfferText = stockItem.offer_text;
                     bonusQty = 0;
