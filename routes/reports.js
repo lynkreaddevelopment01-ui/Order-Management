@@ -110,6 +110,9 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
             doc.text(item.bonus_quantity > 0 ? `+${item.bonus_quantity}` : '—', 510, y);
 
             if (item.offer_skipped) {
+                y += 15;
+                doc.fillColor('#ef4444').fontSize(7.5).text('Low stock offer not applied', 60, y);
+                doc.fillColor('#000000').fontSize(8.5);
                 skippedOffers.push(item.item_name);
             }
             y += 20;
@@ -139,19 +142,9 @@ router.get('/order-pdf/:id', authenticateToken, requireAdmin, async (req, res) =
             const legacyPattern = /Offer \(.*?\) for ".*?" could not be applied due to low stock\. Team will contact you\./g;
             cleanNote = cleanNote.replace(legacyPattern, '').trim();
 
-            if (skippedOffers.length > 0) {
-                doc.moveDown(1);
-                doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e293b').text('Customer Note');
-                doc.fontSize(9).font('Helvetica').fillColor('#ef4444').text('Offer Not applied due to Low stock:');
-                skippedOffers.forEach(name => {
-                    doc.text(`- ${name} - Team will contact you`);
-                });
-                doc.fillColor('#000000');
-            }
-
             if (cleanNote) {
-                doc.moveDown(0.5);
-                if (skippedOffers.length === 0) doc.fontSize(10).font('Helvetica-Bold').text('Customer Note');
+                doc.moveDown(1);
+                doc.fontSize(10).font('Helvetica-Bold').text('Customer Note');
                 doc.fontSize(9).font('Helvetica').text(cleanNote);
             }
         }
@@ -237,10 +230,12 @@ router.get('/order-excel/:id', authenticateToken, requireAdmin, async (req, res)
             row.getCell(6).value = item.bonus_quantity || 0;
 
             // Clean table: only show successful offers
-            row.getCell(7).value = item.applied_offer || '—';
-
             if (item.offer_skipped) {
+                row.getCell(7).value = 'Low stock - not applied';
+                row.getCell(7).font = { color: { argb: 'FFFF0000' } };
                 skippedOffers.push({ name: item.item_name, offer: item.missed_offer_text });
+            } else {
+                row.getCell(7).value = item.applied_offer || '—';
             }
         });
 
@@ -252,19 +247,6 @@ router.get('/order-excel/:id', authenticateToken, requireAdmin, async (req, res)
         sumRow.getCell(4).value = totalDist || 0;
         sumRow.getCell(5).value = totalMRP || 0;
         sumRow.font = { bold: true };
-        nextRow += 2;
-        if (skippedOffers.length > 0) {
-            sheet.getCell(`A${nextRow}`).value = 'CUSTOMER NOTE:';
-            sheet.getCell(`A${nextRow}`).font = { bold: true };
-            sheet.getCell(`B${nextRow}`).value = 'Offer Not applied due to Low stock:';
-            nextRow++;
-            skippedOffers.forEach(o => {
-                sheet.getCell(`B${nextRow}`).value = `- ${o.name} - Team will contact you`;
-                nextRow++;
-            });
-            nextRow++;
-        }
-
         let cleanNote = order.notes || '';
         const legacyPattern = /Offer \(.*?\) for ".*?" could not be applied due to low stock\. Team will contact you\./g;
         cleanNote = cleanNote.replace(legacyPattern, '').trim();
