@@ -3,10 +3,19 @@ let adminsData = [];
 function getPortalUrl(username) {
   const host = window.location.host;
   const protocol = window.location.protocol;
+
+  // Localhost support
   if (host.includes('localhost')) {
     return `${protocol}//${username.toLowerCase()}.localhost:3000/portal`;
   }
-  // For production, strip leading subdomains if any and use the main domain
+
+  // Railway shared domain support (e.g., myapp.up.railway.app)
+  // Shared domains don't support sub-subdomains, so we stay on the same domain.
+  if (host.includes('up.railway.app')) {
+    return `${protocol}//${host}/portal`;
+  }
+
+  // Custom Domain support (e.g., yourdomain.com)
   const parts = host.split('.');
   const domain = parts.slice(-2).join('.');
   return `${protocol}//${username.toLowerCase()}.${domain}/portal`;
