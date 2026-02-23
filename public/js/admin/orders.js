@@ -133,8 +133,20 @@ async function viewOrder(id) {
     const o = data.order;
     const items = data.items;
 
+    // Check visibility flags
+    const hasOffer = items.some(it => it.applied_offer || it.offer_skipped);
+    const hasPTR = items.some(it => {
+      const p = parseFloat(it.dist_price);
+      return !isNaN(p) && p > 0;
+    });
+    const hasMRP = items.some(it => {
+      const p = parseFloat(it.mrp);
+      return !isNaN(p) && p > 0;
+    });
+
     document.getElementById('orderDetailTitle').textContent = `Order ${o.order_number}`;
-    document.getElementById('orderDetailContent').innerHTML = `
+
+    let html = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
         <div>
           <div class="text-sm text-muted" style="margin-bottom:2px;">Customer ID</div>
@@ -170,56 +182,67 @@ async function viewOrder(id) {
         <table style="width:100%; border-collapse: collapse;">
           <thead style="background: var(--neutral-50);">
             <tr>
-              <th style="padding: 10px 8px; text-align: left;">Item</th>
-              ${items.some(it => it.applied_offer || it.offer_skipped) ? '<th style="padding: 10px 8px; text-align: left;">Offer</th>' : ''}
-              <th style="padding: 10px 8px; text-align: left;">Qty</th>
-              ${items.some(it => parseFloat(it.dist_price) > 0) ? '<th style="padding: 10px 8px; text-align: left;">PTR rate</th>' : ''}
-              ${items.some(it => parseFloat(it.mrp) > 0) ? '<th style="padding: 10px 8px; text-align: left;">MRP</th>' : ''}
+              <th style="padding: 10px 12px; text-align: left; font-size: 0.75rem; color: #64748b;">ITEM</th>
+              ${hasOffer ? '<th style="padding: 10px 12px; text-align: left; font-size: 0.75rem; color: #64748b;">OFFER</th>' : ''}
+              <th style="padding: 10px 12px; text-align: center; font-size: 0.75rem; color: #64748b;">QTY</th>
+              ${hasPTR ? '<th style="padding: 10px 12px; text-align: right; font-size: 0.75rem; color: #64748b;">PTR RATE</th>' : ''}
+              ${hasMRP ? '<th style="padding: 10px 12px; text-align: right; font-size: 0.75rem; color: #64748b;">MRP</th>' : ''}
             </tr>
           </thead>
           <tbody>
             ${items.map(it => {
-      const hasOfferCol = items.some(i => i.applied_offer || i.offer_skipped);
-      const hasPTRCol = items.some(i => parseFloat(i.dist_price) > 0);
-      const hasMRPCol = items.some(i => parseFloat(i.mrp) > 0);
+      const dp = parseFloat(it.dist_price);
+      const mrp = parseFloat(it.mrp);
 
       return `
                 <tr style="border-bottom: 1px solid var(--neutral-100);">
-                  <td style="padding: 12px 8px;">
-                    <div style="font-weight:600; line-height:1.4; word-break:break-word;">${it.item_name}</div>
+                  <td style="padding: 12px; vertical-align: top;">
+                    <div style="font-weight:600; line-height:1.4; color: #1e293b;">${it.item_name}</div>
                     ${it.offer_skipped ? `<div style="font-size:0.65rem; color:#dc2626; font-weight:700; margin-top:4px; font-style:italic;">(Low stock - offer not applied)</div>` : ''}
                   </td>
-                  ${hasOfferCol ? `<td style="padding: 12px 8px;">${it.offer_skipped ? (it.missed_offer_text || 'Offer') : (it.applied_offer || '—')}</td>` : ''}
-                  <td style="padding: 12px 8px;">
-                    <div style="font-weight:700; display: flex; align-items: center; gap: 6px;">
+                  ${hasOffer ? `
+                    <td style="padding: 12px; vertical-align: top; color: #64748b;">
+                        ${it.offer_skipped ? (it.missed_offer_text || 'Offer') : (it.applied_offer || '—')}
+                    </td>
+                  ` : ''}
+                  <td style="padding: 12px; vertical-align: top; text-align: center;">
+                    <div style="font-weight:700; display: flex; align-items: center; justify-content: center; gap: 6px;">
                         <span>${it.quantity}</span>
-                        ${it.bonus_quantity > 0 ? `<span style="font-size:0.65rem; color:#15803d; background:#dcfce7; padding:2px 6px; border-radius:4px; border:1px solid #bbf7d0;">+${it.bonus_quantity} Free</span>` : ''}
+                        ${it.bonus_quantity > 0 ? `<span style="font-size:0.6rem; color:#15803d; background:#dcfce7; padding:1px 4px; border-radius:3px; border:1px solid #bbf7d0;">+${it.bonus_quantity} Free</span>` : ''}
                     </div>
                   </td>
-                  ${hasPTRCol ? `<td style="padding: 12px 8px;">${parseFloat(it.dist_price) > 0 ? '₹' + parseFloat(it.dist_price).toFixed(2) : '—'}</td>` : ''}
-                  ${hasMRPCol ? `<td style="padding: 12px 8px;">${parseFloat(it.mrp) > 0 ? '₹' + parseFloat(it.mrp).toFixed(2) : '—'}</td>` : ''}
+                  ${hasPTR ? `<td style="padding: 12px; vertical-align: top; text-align: right; color: #64748b;">${(!isNaN(dp) && dp > 0) ? '₹' + dp.toFixed(2) : '—'}</td>` : ''}
+                  ${hasMRP ? `<td style="padding: 12px; vertical-align: top; text-align: right; color: #64748b;">${(!isNaN(mrp) && mrp > 0) ? '₹' + mrp.toFixed(2) : '—'}</td>` : ''}
                 </tr>
                 `;
     }).join('')}
           </tbody>
         </table>
       </div>
+
+      ${o.notes ? `<div style="margin-top:12px;padding:10px;background:var(--neutral-50);border-radius:var(--radius-sm);"><span class="text-muted text-sm">Notes:</span> <span class="text-sm">${o.notes}</span></div>` : ''}
     `;
 
-    // Calculate totals for the summary
+    document.getElementById('orderDetailContent').innerHTML = html;
+
+    // Calculate totals for summary
     let sumDist = 0, sumMRP = 0;
     items.forEach(it => {
-      sumDist += (parseFloat(it.dist_price || 0) * it.quantity);
-      sumMRP += (parseFloat(it.mrp || 0) * it.quantity);
+      const dp = parseFloat(it.dist_price) || 0;
+      const mrp = parseFloat(it.mrp) || 0;
+      sumDist += (dp * it.quantity);
+      sumMRP += (mrp * it.quantity);
     });
 
     if (sumDist > 0 || sumMRP > 0) {
       document.getElementById('financialSummary').innerHTML = `
-            <div style="padding:10px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; display:flex; gap:20px;">
-                ${sumDist > 0 ? `<div><div style="font-size:0.7rem; color:#64748b;">Total PTR value</div><div style="font-weight:700;">₹${sumDist.toFixed(2)}</div></div>` : ''}
-                ${sumMRP > 0 ? `<div><div style="font-size:0.7rem; color:#64748b;">Total MRP</div><div style="font-weight:700;">₹${sumMRP.toFixed(2)}</div></div>` : ''}
+            <div style="padding:10px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; display:flex; gap:24px;">
+                ${sumDist > 0 ? `<div><div style="font-size:0.7rem; color:#64748b; text-transform:uppercase; font-weight:700;">Total PTR Value</div><div style="font-weight:800; color:#0c4a6e; font-size:0.95rem;">₹${sumDist.toFixed(2)}</div></div>` : ''}
+                ${sumMRP > 0 ? `<div><div style="font-size:0.7rem; color:#64748b; text-transform:uppercase; font-weight:700;">Total MRP Value</div><div style="font-weight:800; color:#0c4a6e; font-size:0.95rem;">₹${sumMRP.toFixed(2)}</div></div>` : ''}
             </div>
         `;
+    } else {
+      document.getElementById('financialSummary').innerHTML = '';
     }
 
     document.getElementById('orderDetailFooter').innerHTML = `
@@ -230,6 +253,7 @@ async function viewOrder(id) {
 
     openModal('orderDetailModal');
   } catch (err) {
+    console.error(err);
     showToast('Failed to load order details', 'error');
   }
 }
