@@ -15,9 +15,10 @@ function getPortalUrl(username) {
     return `${protocol}//${host}/portal?v=${username.toLowerCase()}`;
   }
 
-  // Custom Domain support (e.g., yourdomain.com)
+  // Custom Domain support (e.g., lynkmanage.com)
   const parts = host.split('.');
-  const domain = parts.slice(-2).join('.');
+  // Handles both lynkmanage.com and www.lynkmanage.com
+  const domain = parts.length > 2 ? parts.slice(-2).join('.') : host;
   return `${protocol}//${username.toLowerCase()}.${domain}/portal`;
 }
 
