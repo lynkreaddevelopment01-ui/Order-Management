@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place Your Order | Medical Order Management</title>
+    <meta name="description" content="Place your medical supply order quickly and easily">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* Customer-specific overrides */
+        .order-category-header {
+            padding: 16px 0 8px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--primary-700);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: transparent;
+            margin-top: 24px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--neutral-100);
+        }
+
+        .special-offers-header {
+            color: var(--accent-600) !important;
+            border-bottom-color: var(--accent-200) !important;
+        }
+
+        .order-success-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(6px);
+        }
+
+        .order-success-card {
+            background: var(--surface-card);
+            border-radius: var(--radius-xl);
+            padding: 48px 40px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: var(--shadow-xl);
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .order-success-card .success-icon {
+            width: 72px;
+            height: 72px;
+            background: var(--accent-100);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+        }
+
+        .order-success-card h2 {
+            color: var(--accent-600);
+            margin-bottom: 8px;
+        }
+
+        .order-success-card .order-num {
+            background: var(--neutral-50);
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 16px 0;
+            color: var(--primary-700);
+        }
+
+        .notes-input {
+            margin: 16px 20px 0;
+        }
+
+        .cart-badge {
+            background: var(--danger-500);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: var(--radius-full);
+            margin-left: 6px;
+        }
+
+        .stock-search-bar {
+            padding: 14px 20px;
+            background: var(--surface-card);
+            border-bottom: 1px solid var(--neutral-100);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .stock-search-bar input {
+            background: var(--neutral-50);
+        }
+
+        /* Order history */
+        .history-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--neutral-100);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-item-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background 0.2s;
+            border-radius: 8px;
+        }
+
+        .history-item-main:hover {
+            background: #f8fafc;
+        }
+
+        .history-item-main::after {
+            content: '→';
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-left: 8px;
+            margin-top: 4px;
+        }
+
+        .history-item-details-container {
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .history-item.expanded .history-item-details-container {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .history-item-details {
+            background: white;
+            border: 1px solid #eef2f6;
+            border-radius: 12px;
+            padding: 0;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .history-table-header {
+            display: grid;
+            grid-template-columns: 1fr 60px;
+            padding: 14px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #eef2f6;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .history-table-row {
+            display: grid;
+            grid-template-columns: 1fr 60px;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.85rem;
+            align-items: center;
+        }
+
+        .history-table-row:last-child {
+            border-bottom: none;
+        }
+
+        .history-table-row .item-qty {
+            text-align: right;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .history-table-row .item-name {
+            color: #1e293b;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .order-history-footer {
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        /* Customer info area */
+        .order-header {
+            background: var(--gradient-primary);
+            padding-bottom: 40px;
+            color: white;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .customer-profile-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin: 0 auto;
+            max-width: 650px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.95rem;
+        }
+
+        .profile-icon {
+            font-size: 1.1rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .profile-label {
+            color: rgba(255, 255, 255, 0.7);
+            width: 70px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            flex-shrink: 0;
+        }
+
+        .profile-value {
+            flex: 1;
+            font-weight: 500;
+            word-break: break-word;
+        }
+
+        /* Tabs Styling */
+        .login-tabs {
+            display: flex;
+            background: var(--neutral-100);
+            padding: 4px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--primary-600);
+            box-shadow: var(--shadow-sm);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOGIN VIEW -->
+    <div id="loginView">
+        <div class="customer-login-page">
+            <div class="login-card fade-in-up">
+                <div class="login-logo">🏥</div>
+                <h1>Medical Orders</h1>
+
+                <div class="login-tabs">
+                    <button class="tab-btn active" id="customerTab" onclick="switchTab('customer')">Customer</button>
+                    <button class="tab-btn" id="adminTab" onclick="switchTab('admin')">Admin</button>
+                </div>
+
+                <!-- Customer Form -->
+                <div id="customerFormSection">
+                    <p class="login-sub">Enter your Customer ID to place an order</p>
+                    <form id="customerLoginForm">
+                        <div class="form-group" style="text-align:left;">
+                            <label class="form-label" for="custId">Customer ID</label>
+                            <input type="text" class="form-control" id="custId" name="customerId"
+                                placeholder="Enter your registered Customer ID" required>
+                        </div>
+                        <div id="custLoginError"
+                            style="color: var(--danger-500); font-size: 0.85rem; margin-bottom: 10px; display: none;">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg" id="custLoginBtn" style="width: 100%;">
+                            Continue →
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Admin Form -->
+                <div id="adminFormSection" style="display: none;">
+                    <p class="login-sub">Admin Login for this vendor</p>
+                    <form id="adminLoginForm">
+                        <div class="form-group" style="text-align:left;">
+                            <label class="form-label" for="admin_username">Username</label>
+                            <input type="text" class="form-control" id="admin_username" name="username"
+                                placeholder="Admin username" required autocomplete="username">
+                        </div>
+                        <div class="form-group" style="text-align:left;">
+                            <label class="form-label" for="admin_password">Password</label>
+                            <input type="password" class="form-control" id="admin_password" name="password"
+                                placeholder="Admin password" required autocomplete="current-password">
+                        </div>
+                        <div id="adminLoginError"
+                            style="color: var(--danger-500); font-size: 0.85rem; margin-bottom: 10px; display: none;">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg" id="adminLoginBtn" style="width: 100%;">
+                            Sign In
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDER VIEW -->
+    <div id="orderView" style="display: none;">
+        <div class="order-page">
+            <!-- Header Section with Profile -->
+            <div class="order-header">
+                <div class="order-topbar" style="background:none;box-shadow:none;">
+                    <div>
+                        <h2 style="font-weight: 800; letter-spacing: -0.01em;">🏥 Medical Orders</h2>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <button class="btn btn-ghost btn-sm" style="color:white;border:1px solid rgba(255,255,255,0.3);"
+                            onclick="showHistory()">📋 My Orders</button>
+                        <button class="btn btn-ghost btn-sm" style="color:white;border:1px solid rgba(255,255,255,0.3);"
+                            onclick="customerLogout()">Exit</button>
+                    </div>
+                </div>
+
+                <div class="customer-profile-card">
+                    <div class="profile-row">
+                        <div class="profile-icon">👤</div>
+                        <div class="profile-label">Name</div>
+                        <div id="displayCustName" class="profile-value" style="font-size:1.15rem;font-weight:700;">
+                            Customer</div>
+                    </div>
+                    <div class="profile-row">
+                        <div class="profile-icon">📞</div>
+                        <div class="profile-label">Phone</div>
+                        <div id="displayCustPhone" class="profile-value">9876543210</div>
+                    </div>
+                    <div class="profile-row">
+                        <div class="profile-icon">📍</div>
+                        <div class="profile-label">Address</div>
+                        <div id="displayCustAddress" class="profile-value">123 Street, City</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock List & Search Container -->
+            <div class="portal-container">
+                <!-- Integrated Search -->
+                <div class="stock-search-bar"
+                    style="border-radius: 14px; margin: 24px 0; box-shadow: var(--shadow-sm); border: 1px solid var(--neutral-200);">
+                    <div class="search-bar" style="max-width:100%; margin:0;">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="form-control" placeholder="Search across all medical supplies..."
+                            oninput="filterItems(this.value)" id="itemSearchInput">
+                    </div>
+                </div>
+
+                <div class="stock-list" id="stockListArea" style="padding-bottom: 120px;">
+                    <!-- Items rendered here -->
+                </div>
+
+                <!-- Notes -->
+                <div class="notes-input" style="margin: 20px 0 40px;">
+                    <div class="form-group">
+                        <label class="form-label" for="orderNotes">Order Notes (Optional)</label>
+                        <textarea class="form-control" id="orderNotes" placeholder="Any special instructions..."
+                            rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky Bottom Summary Bar -->
+            <div class="order-summary-bar" id="orderSummaryBar">
+                <div style="display:flex; flex-direction:column;">
+                    <span id="cartItemCount" style="font-weight:800; color:var(--primary-700); font-size:1.1rem;">0
+                        items</span>
+                    <span
+                        style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Ready
+                        to ship</span>
+                </div>
+                <button class="btn btn-primary btn-lg" onclick="submitOrder()" id="submitOrderBtn"
+                    style="padding: 12px 32px; border-radius:12px; font-weight:700; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
+                    Place Order →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Success Overlay -->
+    <div id="orderSuccessOverlay" style="display: none;"></div>
+
+    <!-- Order History Modal -->
+    <div class="modal-overlay" id="historyModal" style="z-index: 2000;">
+        <div class="modal" style="max-width:520px;">
+            <div class="modal-header">
+                <h3>My Orders</h3>
+                <button class="modal-close"
+                    onclick="document.getElementById('historyModal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="modal-body" id="historyContent" style="padding:0;">
+                <!-- History items -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Detail Modal (Secondary Popup) -->
+    <div class="modal-overlay" id="orderDetailModal" style="z-index: 3000;">
+        <div class="modal"
+            style="max-width:480px; transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div class="modal-header">
+                <div>
+                    <h3 id="detailOrderNumber">Order Details</h3>
+                    <div id="detailOrderDate" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+                    </div>
+                </div>
+                <button class="modal-close"
+                    onclick="document.getElementById('orderDetailModal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="history-item-details" style="margin-top:0;">
+                    <div class="history-table-header">
+                        <span>ITEM</span>
+                        <span style="text-align:right;">QTY</span>
+                    </div>
+                    <div id="detailItemsList">
+                        <!-- Detail items here -->
+                    </div>
+                </div>
+                <div id="detailOrderNotes" class="order-history-footer" style="display:none;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script>
+        // Global Error Tracker
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            console.error('[FATAL]', msg, 'at', lineNo + ':' + columnNo);
+            if (msg.includes('id')) {
+                showToast('UI Error: Missing data property (' + msg + ')', 'error');
+            }
+            return false;
+        };
+
+        // ===== STATE =====
+        let uniqueCode = '';
+        let customerId = '';
+        let customerData = null;
+        let stockItems = [];
+        let cart = {}; // stockId: quantity
+
+        // Pagination state
+        let customerPagination = {
+            page: 1,
+            limit: 20,
+            totalPages: 1,
+            loading: false,
+            search: ''
+        };
+        let searchTimeout = null;
+
+        // Initialize
+        window.addEventListener('load', async () => {
+            await fetchTenantInfo();
+
+            const savedCustomer = localStorage.getItem('customer');
+            if (savedCustomer) {
+                customerData = JSON.parse(savedCustomer);
+                customerId = customerData.customer_id_external;
+                // Favor the code from saved session
+                if (customerData.unique_code) uniqueCode = customerData.unique_code;
+
+                // Display customer info
+                const nameEl = document.getElementById('displayCustName');
+                if (nameEl) nameEl.textContent = customerData.name;
+
+                const phoneEl = document.getElementById('displayCustPhone');
+                if (phoneEl) phoneEl.textContent = customerData.phone;
+
+                const addrEl = document.getElementById('displayCustAddress');
+                if (addrEl) addrEl.textContent = `${customerData.address || ''}${customerData.city ? ', ' + customerData.city : ''}` || 'Not provided';
+
+                document.getElementById('loginView').style.display = 'none';
+                document.getElementById('orderView').style.display = 'block';
+                loadStock(1);
+            }
+        });
+
+        async function fetchTenantInfo() {
+            try {
+                const res = await fetch('/api/auth/current-tenant');
+                if (res.ok) {
+                    const data = await res.json();
+                    uniqueCode = data.unique_code || '';
+                    console.log('[PORTAL] Identity confirmed:', data.company_name, uniqueCode);
+                } else {
+                    // Fallback to path extraction
+                    const pathParts = window.location.pathname.split('/').filter(p => p);
+                    if (pathParts.length > 0) {
+                        const lastPart = pathParts[pathParts.length - 1];
+                        uniqueCode = lastPart === 'admin' ? (pathParts[pathParts.length - 2] || '') : lastPart;
+                    }
+                    console.log('[PORTAL] Using path-based code:', uniqueCode);
+                }
+            } catch (err) {
+                console.error('Tenant fetch failed:', err);
+                const pathParts = window.location.pathname.split('/').filter(p => p);
+                if (pathParts.length > 0) {
+                    uniqueCode = pathParts[pathParts.length - 1];
+                }
+            }
+        }
+
+        // ===== TABS =====
+        function switchTab(type) {
+            const customerTab = document.getElementById('customerTab');
+            const adminTab = document.getElementById('adminTab');
+            const customerSection = document.getElementById('customerFormSection');
+            const adminSection = document.getElementById('adminFormSection');
+
+            if (type === 'customer') {
+                customerTab.classList.add('active');
+                adminTab.classList.remove('active');
+                customerSection.style.display = 'block';
+                adminSection.style.display = 'none';
+            } else {
+                customerTab.classList.remove('active');
+                adminTab.classList.add('active');
+                customerSection.style.display = 'none';
+                adminSection.style.display = 'block';
+            }
+        }
+
+        // ===== ADMIN LOGIN =====
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('admin_username').value.trim();
+            const password = document.getElementById('admin_password').value;
+            const errorEl = document.getElementById('adminLoginError');
+            const loginBtn = document.getElementById('adminLoginBtn');
+
+            errorEl.style.display = 'none';
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in...';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    // Redirect to the branded dashboard
+                    const baseUrl = window.location.pathname.replace(/\/$/, '');
+                    window.location.href = `${baseUrl}/admin`;
+                } else {
+                    errorEl.textContent = data.error || 'Login failed';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.style.display = 'block';
+            }
+
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Sign In';
+        });
+
+        // ===== CUSTOMER LOGIN =====
+        document.getElementById('customerLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const custIdVal = document.getElementById('custId').value.trim();
+            const errorEl = document.getElementById('custLoginError');
+            const loginBtn = document.getElementById('custLoginBtn');
+
+            errorEl.style.display = 'none';
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Verifying...';
+
+            try {
+                const res = await fetch('/api/customer/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uniqueCode, customerId: custIdVal })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    customerId = custIdVal;
+                    customerData = data.customer;
+                    uniqueCode = data.customer.unique_code || uniqueCode;
+                    localStorage.setItem('customer', JSON.stringify(data.customer));
+
+                    // Display customer info
+                    document.getElementById('displayCustName').textContent = data.customer.name;
+                    document.getElementById('displayCustPhone').textContent = data.customer.phone;
+                    document.getElementById('displayCustAddress').textContent = `${data.customer.address || ''}${data.customer.city ? ', ' + data.customer.city : ''}` || 'Not provided';
+
+                    document.getElementById('loginView').style.display = 'none';
+                    document.getElementById('orderView').style.display = 'block';
+                    loadStock(1);
+                } else {
+                    errorEl.textContent = data.error || 'Verification failed';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.style.display = 'block';
+            }
+
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Continue →';
+        });
+
+        // ===== LOAD STOCK =====
+        async function loadStock(page = 1, append = false) {
+            if (customerPagination.loading) return;
+            customerPagination.loading = true;
+            customerPagination.page = page;
+
+            const area = document.getElementById('stockListArea');
+            if (!append) {
+                area.innerHTML = '<div style="text-align:center; padding:40px;"><div class="spinner"></div><p style="margin-top:12px; color:var(--text-muted); font-size:0.85rem;">Loading medical supplies...</p></div>';
+            }
+
+            try {
+                const search = customerPagination.search;
+                const url = `/api/customer/stock/${uniqueCode}?page=${page}&limit=${customerPagination.limit}&search=${encodeURIComponent(search)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                customerPagination.totalPages = data.totalPages;
+
+                if (append) {
+                    stockItems = [...stockItems, ...data.stock];
+                } else {
+                    stockItems = data.stock;
+                    area.innerHTML = '';
+                }
+
+                renderStockList(stockItems);
+                renderLoadMore();
+                updateSummaryBar();
+            } catch (err) {
+                showToast('Failed to load items', 'error');
+                area.innerHTML = '<p style="text-align:center; padding:40px; color:var(--danger-500);">Error loading stock. Please refresh.</p>';
+            } finally {
+                customerPagination.loading = false;
+            }
+        }
+
+        function renderLoadMore() {
+            const existing = document.getElementById('loadMoreContainer');
+            if (existing) existing.remove();
+
+            if (customerPagination.page < customerPagination.totalPages) {
+                const container = document.createElement('div');
+                container.id = 'loadMoreContainer';
+                container.style.cssText = 'padding: 24px; text-align: center;';
+                container.innerHTML = `
+                    <button class="btn btn-outline" style="width:100%; max-width:300px; border-radius:12px;" onclick="loadStock(${customerPagination.page + 1}, true)">
+                        Load More Items
+                    </button>
+                `;
+                document.getElementById('stockListArea').appendChild(container);
+            }
+        }
+
+
+        // ===== RENDER STOCK LIST =====
+        function renderStockList(items) {
+            const area = document.getElementById('stockListArea');
+            if (!items) items = [];
+
+            if (items.length === 0) {
+                const emptyMsg = customerPagination.search ? 'No items match your search' : 'No items available';
+                area.innerHTML = `
+                  <div class="empty-state">
+                    <div class="empty-icon">📦</div>
+                    <h3>${emptyMsg}</h3>
+                    <p>Check spelling or try different keywords</p>
+                  </div>
+                `;
+                return;
+            }
+
+            // Group by category, but extract offers into a "Special Offers" group at the top
+            const categories = {};
+            const offers = items.filter(i => i && i.has_offer);
+            const others = items.filter(i => i && !i.has_offer);
+
+            if (offers.length > 0) {
+                categories['Special Offers ✨'] = offers;
+            }
+
+            others.forEach(item => {
+                const cat = item.category || 'General';
+                if (!categories[cat]) categories[cat] = [];
+                categories[cat].push(item);
+            });
+
+            let html = '';
+            for (const [cat, catItems] of Object.entries(categories)) {
+                const isSpecial = cat.includes('Special Offers');
+                html += `<div class="order-category-header ${isSpecial ? 'special-offers-header' : ''}">${cat}</div>`;
+                html += catItems.map(item => {
+                    if (!item) return '';
+                    const qty = cart[item.id] || 0;
+                    const hasOffer = item.has_offer;
+
+                    return `
+            <div class="stock-item ${hasOffer ? 'offer-item' : ''}" id="stock-item-${item.id}">
+              <div class="item-info">
+                <div class="item-name">
+                  ${item.item_name}
+                  ${hasOffer ? `<span class="badge badge-warning" style="font-size:0.65rem;margin-left:6px;">🏷️ ${item.offer_text || 'OFFER'}</span>` : ''}
+                </div>
+                <div class="item-meta" style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+                  <span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; background:var(--neutral-100); padding:2px 8px; border-radius:6px;">📦 ${item.unit}</span>
+                  <span style="font-size:0.85rem; font-weight:800; color:${item.quantity > 5 ? 'var(--success-700)' : 'var(--danger-600)'}; display:flex; align-items:center; gap:4px;">
+                    <span style="height:6px; width:6px; background:currentColor; border-radius:50%;"></span>
+                    STOCK: ${item.quantity}
+                  </span>
+                </div>
+              </div>
+              <div class="qty-controls">
+                <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
+                <div class="qty-value" id="qty-${item.id}">${qty}</div>
+                <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
+              </div>
+            </div>
+          `;
+                }).join('');
+            }
+
+            area.innerHTML = html;
+        }
+
+        function filterItems(query) {
+            customerPagination.search = query.trim();
+            if (searchTimeout) clearTimeout(searchTimeout);
+
+            searchTimeout = setTimeout(() => {
+                loadStock(1, false);
+            }, 300);
+        }
+
+        // ===== CART =====
+        function updateQty(stockId, delta, maxQty) {
+            const current = cart[stockId] || 0;
+            const newQty = Math.max(0, Math.min(maxQty, current + delta));
+
+            if (newQty === 0) {
+                delete cart[stockId];
+            } else {
+                cart[stockId] = newQty;
+            }
+
+            // Update UI
+            const qtyEl = document.getElementById(`qty-${stockId}`);
+            if (qtyEl) qtyEl.textContent = newQty;
+
+            updateSummaryBar();
+        }
+
+        function updateSummaryBar() {
+            const entries = Object.entries(cart);
+            const totalItems = entries.reduce((sum, [, qty]) => sum + qty, 0);
+
+            const cartCountEl = document.getElementById('cartItemCount');
+            const submitBtn = document.getElementById('submitOrderBtn');
+            const bar = document.getElementById('orderSummaryBar');
+
+            cartCountEl.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+
+            // Always visible as requested
+            bar.classList.add('visible');
+
+            if (totalItems > 0) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.textContent = 'Place Order →';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.textContent = 'Add Items';
+            }
+        }
+
+        // ===== SUBMIT ORDER =====
+        async function submitOrder() {
+            const entries = Object.entries(cart);
+            if (entries.length === 0) {
+                showToast('Please add at least one item', 'warning');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitOrderBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Placing Order...';
+
+            const items = entries.map(([stockId, quantity]) => ({
+                stockId: parseInt(stockId),
+                quantity
+            }));
+
+            const notes = document.getElementById('orderNotes').value.trim();
+
+            try {
+                const res = await fetch('/api/customer/order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uniqueCode, customerId, items, notes })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    // Show success
+                    document.getElementById('orderSuccessOverlay').style.display = 'flex';
+                    document.getElementById('orderSuccessOverlay').innerHTML = `
+            <div class="order-success-overlay">
+              <div class="order-success-card">
+                <div class="success-icon">✅</div>
+                <h2>Order Placed Successfully!</h2>
+                <p class="text-muted">Your order has been submitted for processing.</p>
+                <div class="order-num">${data.orderNumber}</div>
+                <button class="btn btn-primary" onclick="resetOrder()">Place Another Order</button>
+              </div>
+            </div>
+          `;
+
+                    // Reset cart
+                    cart = {};
+                    document.getElementById('orderNotes').value = '';
+                    updateSummaryBar();
+                    loadStock(); // Refresh stock quantities immediately
+                } else {
+                    showToast(data.error || 'Failed to place order', 'error');
+                }
+            } catch (err) {
+                showToast('Network error. Please try again.', 'error');
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Place Order →';
+        }
+
+        function resetOrder() {
+            document.getElementById('orderSuccessOverlay').style.display = 'none';
+            loadStock(); // Reload stock (quantities updated)
+        }
+
+        // ===== ORDER HISTORY =====
+        let loadedOrders = [];
+
+        function openOrderDetails(orderNumber) {
+            const order = loadedOrders.find(o => o.order_number === orderNumber);
+            if (!order) return;
+
+            document.getElementById('detailOrderNumber').textContent = order.order_number;
+            document.getElementById('detailOrderDate').textContent = `Placed on ${new Date(order.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}`;
+
+            const list = document.getElementById('detailItemsList');
+            const items = order.items || [];
+            const skipped = items.filter(item => item.offer_skipped);
+
+            let totalDist = 0;
+            let totalMRP = 0;
+
+            list.innerHTML = items.map(item => {
+                const dp = parseFloat(item.dist_price) || 0;
+                const mrp = parseFloat(item.mrp) || 0;
+                totalDist += (dp * item.quantity);
+                totalMRP += (mrp * item.quantity);
+
+                return `
+                    <div class="history-table-row" style="display: flex; flex-direction: column; padding: 12px 16px; background: white; border-bottom: 1px solid #f8fafc;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <span class="item-name" style="font-weight: 500; color: #334155;">${item.item_name}</span>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="item-qty" style="color: #64748b; font-weight: 600; font-size: 0.85rem;">Qty: ${item.quantity}</span>
+                                ${item.bonus_quantity > 0 ? `<span style="font-size: 0.65rem; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-weight: 700;">+${item.bonus_quantity} Bonus</span>` : ''}
+                            </div>
+                        </div>
+                        ${(dp || mrp) ? `
+                            <div style="display: flex; gap: 12px; margin-top: 6px; font-size: 0.75rem; color: #64748b;">
+                                ${dp ? `<span>Dist.P: <span style="font-weight:600;">₹${dp.toFixed(2)}</span></span>` : ''}
+                                ${mrp ? `<span>MRP: <span style="font-weight:600;">₹${mrp.toFixed(2)}</span></span>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('') || '<div style="padding:32px; text-align:center; color:#94a3b8; font-size:0.85rem;">No items found</div>';
+
+            const notesEl = document.getElementById('detailOrderNotes');
+            let notesHtml = '';
+
+            // Add Financial Summary if prices exist
+            if (totalDist > 0 || totalMRP > 0) {
+                notesHtml += `
+                    <div style="margin-bottom: 16px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <span style="font-weight:700; color:#475569; display:block; margin-bottom:6px; font-size:0.65rem; text-transform:uppercase;">Financial Summary</span>
+                        <div style="display: flex; gap: 24px; font-size: 0.85rem;">
+                            ${totalDist > 0 ? `<div><div style="font-size: 0.7rem; color: #94a3b8;">Total Dist.P</div><div style="font-weight: 700; color: #334155;">₹${totalDist.toFixed(2)}</div></div>` : ''}
+                            ${totalMRP > 0 ? `<div><div style="font-size: 0.7rem; color: #94a3b8;">Total MRP</div><div style="font-weight: 700; color: #334155;">₹${totalMRP.toFixed(2)}</div></div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (skipped.length > 0) {
+                notesHtml += `
+                    <div style="margin-bottom: 16px; padding: 12px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px;">
+                        <span style="font-weight:700; color:#be123c; display:block; margin-bottom:4px; font-size:0.65rem; text-transform:uppercase;">Promotional Status</span>
+                        <div style="font-size: 0.75rem; color: #991b1b; font-weight: 500;">
+                            Offer is not applied due to low stock:
+                            <ul style="margin: 4px 0 0 16px; padding: 0;">
+                                ${skipped.map(s => `<li>Offer (${s.missed_offer_text}) for ${s.item_name}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (order.notes) {
+                notesHtml += `<span style="font-weight:700; color:#475569; display:block; margin-bottom:2px; font-size:0.65rem; text-transform:uppercase;">Customer Note</span><div style="font-size:0.8rem; color:#1e293b;">${order.notes}</div>`;
+            }
+
+            if (notesHtml) {
+                notesEl.style.display = 'block';
+                notesEl.innerHTML = notesHtml;
+            } else {
+                notesEl.style.display = 'none';
+            }
+
+            document.getElementById('orderDetailModal').classList.add('active');
+        }
+
+        async function showHistory() {
+            try {
+                const res = await fetch(`/api/customer/orders/${uniqueCode}/${customerId}`);
+                const data = await res.json();
+                loadedOrders = data.orders || []; // Store globally for the popup
+
+                const content = document.getElementById('historyContent');
+
+                if (!data.orders || !Array.isArray(data.orders) || data.orders.length === 0) {
+                    content.innerHTML = '<div class="empty-state" style="padding:32px;"><div class="empty-icon">📋</div><h3>No orders yet</h3></div>';
+                } else {
+                    const statusColors = { pending: 'warning', processing: 'primary', completed: 'success', cancelled: 'danger' };
+                    content.innerHTML = data.orders.map(o => {
+                        if (!o) return '';
+                        // const itemsHtml = (o.items || []).map(item => `
+                        //     <div class="history-table-row">
+                        //         <span class="item-name">${item.item_name}</span>
+                        //         <span class="item-qty">${item.quantity}</span>
+                        //     </div>
+                        // `).join('');
+
+                        return `
+            <div class="history-item" style="padding: 20px 0; border-bottom: 1px solid #f1f5f9;">
+              <div class="history-item-main" style="padding: 0 20px;" onclick="openOrderDetails('${o.order_number}')">
+                <div>
+                  <div class="font-semibold" style="color:#0f172a; font-size:1rem; letter-spacing:-0.01em;">${o.order_number || 'N/A'}</div>
+                  <div class="text-xs" style="color:#64748b; margin-top:4px; font-weight:500;">${o.created_at ? new Date(o.created_at).toLocaleDateString([], { dateStyle: 'medium' }) : ''}</div>
+                </div>
+                <div style="text-align:right; margin-right: 32px;">
+                  <span class="badge badge-${statusColors[o.status] || 'neutral'}" style="font-size:0.65rem; text-transform:uppercase; font-weight:700; padding:4px 10px; border-radius:30px;">${o.status || 'pending'}</span>
+                </div>
+              </div>
+            </div>
+          `;
+                    }).join('');
+                }
+
+                document.getElementById('historyModal').classList.add('active');
+            } catch (err) {
+                console.error('[HISTORY] Error:', err);
+                showToast(`Failed to load history: ${err.message}`, 'error');
+            }
+        }
+
+        function toggleOrderDetails(header) {
+            // Deprecated - using openOrderDetails popup now
+        }
+
+        // ===== LOGOUT =====
+        function customerLogout() {
+            localStorage.removeItem('customer');
+            // Redirect to the portal entry
+            window.location.href = './portal';
+        }
+
+        // ===== TOAST =====
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) {
+                console.warn(`[TOAST FALLBACK] ${type.toUpperCase()}: ${message}`);
+                // Fallback alert if container is missing
+                if (type === 'error') alert(message);
+                return;
+            }
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${icons[type] || ''}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,218 @@
+/* ===== UI ELEMENTS: CARDS, TABLES, MODALS, TOASTS ===== */
+
+/* Cards */
+.card {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--neutral-100);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+.card-premium {
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
+.card:hover {
+    box-shadow: var(--premium-shadow);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--neutral-100);
+}
+
+.card-body {
+    padding: 22px;
+}
+
+/* Stat Cards */
+.stat-card {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    border: 1px solid var(--neutral-100);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+.stat-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+/* Tables */
+.table-container {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+}
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    padding: 0 16px 16px 16px;
+}
+
+thead th {
+    padding: 16px 20px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: transparent;
+    white-space: nowrap;
+}
+
+tbody tr {
+    background: var(--surface-card);
+    transition: all var(--transition-base);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+tbody td {
+    padding: 16px 20px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    border: none;
+}
+
+tbody tr:hover {
+    background: var(--primary-50);
+    transform: scale(1.005);
+    box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+    position: relative;
+}
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--surface-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-base);
+    backdrop-filter: blur(4px);
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal {
+    background: var(--surface-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    width: 90%;
+    max-width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+    transform: scale(0.95) translateY(10px);
+    transition: transform var(--transition-base);
+}
+
+.modal-overlay.active .modal {
+    transform: scale(1) translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--neutral-100);
+}
+
+.modal-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: none;
+    background: var(--neutral-50);
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    padding-bottom: 4px;
+    /* Adjust for × vertical centering */
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-close:hover {
+    background: #fee2e2;
+    /* Red 100 */
+    color: #dc2626;
+    /* Red 600 */
+    transform: rotate(90deg);
+}
+
+.modal-close:active {
+    transform: scale(0.95);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--neutral-100);
+}
+
+/* Toasts */
+.toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--surface-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    border-left: 4px solid;
+    min-width: 320px;
+    max-width: 420px;
+    font-size: 0.9rem;
+}
+
+.toast.success {
+    border-color: var(--accent-500);
+}
+
+.toast.error {
+    border-color: var(--danger-500);
+}

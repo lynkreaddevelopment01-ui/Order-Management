@@ -1,0 +1,25 @@
+name: medical-order-mgmt
+region: nyc # Or your preferred region
+services:
+  - name: medical-order-api
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 3000
+    run_command: npm start
+    build_command: npm install
+    envs:
+      - key: DB_TYPE
+        scope: RUN_TIME
+        value: pg
+      - key: DOMAIN
+        scope: RUN_TIME
+        value: # TO BE FILLED (e.g., yourdomain.com)
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: # TO BE FILLED (Generate a strong random string)
+    databases:
+      - engine: PG
+        name: db
+        version: "15"
+        production: false # Set to true for production usage

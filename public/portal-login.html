@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Portal | Access</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .portal-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 24px;
+        }
+
+        .portal-card {
+            background: #ffffff;
+            border: 1px solid var(--neutral-200);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .company-logo-stub {
+            width: 56px;
+            height: 56px;
+            background: var(--primary-600);
+            border-radius: 12px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 1.5rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.025em;
+        }
+
+        .p-text {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .login-tabs {
+            display: flex;
+            background: var(--neutral-100);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 32px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--primary-600);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .login-form {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .login-form.active {
+            display: block;
+        }
+
+        #errorMsg {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+            border: 1px solid #fee2e2;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="portal-container">
+        <div class="portal-card fade-in-up">
+            <div class="brand-header">
+                <div class="company-logo-stub" id="companyInitial">M</div>
+                <h1 id="companyName">Partner Portal</h1>
+                <p class="p-text">Supply Chain Order Management</p>
+            </div>
+
+            <div class="login-tabs">
+                <button class="tab-btn active" onclick="switchTab('customer')">Customer Access</button>
+                <button class="tab-btn" onclick="switchTab('staff')">Staff Login</button>
+            </div>
+
+            <div id="errorMsg"></div>
+
+            <!-- Customer Access Form -->
+            <form id="customerForm" class="login-form active">
+                <div class="form-group">
+                    <label class="form-label" for="customerId">Verification ID</label>
+                    <input type="text" class="form-control" id="customerId" placeholder="Enter your Customer ID"
+                        required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">
+                    Access Ordering
+                </button>
+            </form>
+
+            <!-- Staff Login Form -->
+            <form id="staffForm" class="login-form">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input type="text" class="form-control" id="username" placeholder="Staff identifier" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" class="form-control" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">
+                    Staff Access
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Tab Switching
+        function switchTab(type) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
+            document.getElementById('errorMsg').style.display = 'none';
+
+            if (type === 'customer') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('customerForm').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('staffForm').classList.add('active');
+            }
+        }
+
+        // Branding & Session Check
+        window.addEventListener('load', async () => {
+            // 1. Session Check
+            const token = localStorage.getItem('token');
+            const customer = localStorage.getItem('customer');
+
+            if (token) {
+                window.location.href = window.location.pathname + '-admin';
+                return;
+            }
+            if (customer) {
+                window.location.href = window.location.pathname + '-customer';
+                return;
+            }
+
+            // 2. Fetch Branding
+            try {
+                const res = await fetch('/api/auth/current-tenant');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('companyName').textContent = data.company_name;
+                    document.getElementById('companyInitial').textContent = data.company_name[0].toUpperCase();
+                    document.title = `${data.company_name} | Portal`;
+                }
+            } catch (err) {
+                console.error('Branding load failed:', err);
+            }
+        });
+
+        // Customer Access Logic
+        document.getElementById('customerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const customerId = document.getElementById('customerId').value.trim();
+            const errorEl = document.getElementById('errorMsg');
+
+            try {
+                const res = await fetch('/api/customer/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customerId })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('customer', JSON.stringify(data.customer));
+                    window.location.href = window.location.pathname + '-customer';
+                } else {
+                    errorEl.textContent = data.error || 'Identity verification failed';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection error. Check network.';
+                errorEl.style.display = 'block';
+            }
+        });
+
+        // Staff Login Logic
+        document.getElementById('staffForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('errorMsg');
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.location.href = window.location.pathname + '-admin';
+                } else {
+                    errorEl.textContent = data.error || 'Invalid credentials';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Authentication error.';
+                errorEl.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+
+</html>

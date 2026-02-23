@@ -1,0 +1,138 @@
+/* ===== LAYOUT: NAVIGATION, HEADER, STRUCTURE ===== */
+
+.dashboard-layout.top-nav-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.top-nav {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    background: #ffffff;
+    border-bottom: 1px solid var(--neutral-200);
+    z-index: 1000;
+}
+
+.nav-container {
+    width: 100%;
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nav-left,
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.horizontal-nav {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.horizontal-nav .nav-item {
+    margin-bottom: 0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-base);
+}
+
+.horizontal-nav .nav-item:hover {
+    background: var(--neutral-100);
+    color: var(--primary-600);
+}
+
+.horizontal-nav .nav-item.active {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0.05) 100%);
+    color: #38bdf8;
+    border-color: rgba(14, 165, 233, 0.2);
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.1);
+}
+
+.user-profile-menu {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.user-info-brief {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    background: var(--gradient-primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+.user-details-inline {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.user-role-badge {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.logout-link {
+    background: transparent;
+    border: 1px solid var(--neutral-200);
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logout-link:hover {
+    background: var(--danger-50);
+    color: var(--danger-600);
+    border-color: var(--danger-100);
+}
+
+.main-content {
+    flex: 1;
+    min-height: 100vh;
+    padding: 0;
+    background: var(--surface-bg);
+}
+
+.content-area {
+    width: 100%;
+    padding: 24px;
+}

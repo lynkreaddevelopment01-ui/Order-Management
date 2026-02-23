@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Medical Order Management</title>
+    <meta name="description" content="Admin dashboard for managing medical orders, stock, and customers">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="dashboard-layout top-nav-layout">
+        <!-- Top Navigation Bar -->
+        <header class="top-nav" id="topNav">
+            <div class="nav-container">
+                <div class="nav-left">
+                    <div class="sidebar-logo" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"
+                        onclick="showPage('dashboard')">
+                        <div style="width: 32px; height: 32px; background: var(--primary-600); border-radius: 6px;">
+                        </div>
+                        <h2 style="margin:0; font-size: 1rem; color: var(--text-primary); font-weight: 700;">MedOrders
+                        </h2>
+                    </div>
+
+                    <nav class="horizontal-nav">
+                        <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+                            Dashboard
+                        </div>
+
+                        <!-- SUPER ADMIN NAV -->
+                        <div id="superAdminNav" style="display:none; flex-direction: row; gap: 4px;">
+                            <div class="nav-item" data-page="manage-admins" onclick="showPage('manage-admins')">
+                                Companies
+                            </div>
+                        </div>
+
+                        <!-- ADMIN COMPANY NAV -->
+                        <div id="adminCompanyNav" style="display:none; flex-direction: row; gap: 4px;">
+                            <div class="nav-item" data-page="stock" onclick="showPage('stock')">
+                                Stock
+                            </div>
+                            <div class="nav-item" data-page="customers" onclick="showPage('customers')">
+                                Customers
+                            </div>
+                            <div class="nav-item" data-page="orders" onclick="showPage('orders')">
+                                Orders
+                            </div>
+                            <div class="nav-item" data-page="offers" onclick="showPage('offers')">
+                                Offers
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+
+                <div class="nav-right">
+                    <div class="user-profile-menu">
+                        <div class="user-info-brief">
+                            <div class="avatar-sm" id="userAvatar"
+                                style="background: var(--neutral-100); color: var(--text-secondary);">SA</div>
+                            <div class="user-details-inline">
+                                <span class="user-name-text" id="userName">Admin</span>
+                            </div>
+                        </div>
+                        <button class="logout-link" onclick="logout()">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dynamic content area -->
+            <div class="content-area" id="contentArea" style="padding: 24px;">
+                <!-- Dynamic content loaded here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- ===== MODALS ===== -->
+
+    <!-- Create Admin Modal (Super Admin) -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="adminModalTitle">Create Company Admin</h3>
+                <button class="modal-close" onclick="closeModal('adminModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="adminForm" onsubmit="event.preventDefault(); saveAdmin();">
+                    <input type="hidden" id="adminId">
+                    <div class="form-group">
+                        <label class="form-label" for="adminCompanyName">Company Name *</label>
+                        <input type="text" class="form-control" id="adminCompanyName"
+                            placeholder="e.g. ABC Medical Supplies">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="adminName">Admin Name *</label>
+                        <input type="text" class="form-control" id="adminName" placeholder="Full name">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="adminUsername">Username *</label>
+                            <input type="text" class="form-control" id="adminUsername" placeholder="Login username">
+                        </div>
+                        <div class="form-group" id="passwordGroup">
+                            <label class="form-label" for="adminPassword">Password *</label>
+                            <input type="password" class="form-control" id="adminPassword" placeholder="Login password">
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="padding:0;border:none;margin-top:20px;">
+                        <button type="button" class="btn btn-ghost" onclick="closeModal('adminModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="adminSubmitBtn">Create Company Admin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Modal -->
+    <div class="modal-overlay" id="stockModal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="stockModalTitle">Add Stock Item</h3>
+                <button class="modal-close" onclick="closeModal('stockModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="stockId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="stockItemCode">Item Code *</label>
+                        <input type="text" class="form-control" id="stockItemCode" placeholder="e.g. MED001" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="stockItemName">Item Name *</label>
+                        <input type="text" class="form-control" id="stockItemName" placeholder="Item name" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="stockCategory">Category</label>
+                        <input type="text" class="form-control" id="stockCategory" placeholder="e.g. Tablets">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="stockUnit">Unit</label>
+                        <input type="text" class="form-control" id="stockUnit" value="Pcs" placeholder="Pcs, Box, etc.">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="stockQty">Quantity</label>
+                        <input type="number" class="form-control" id="stockQty" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="stockPrice">Selling Price</label>
+                        <input type="number" step="0.01" class="form-control" id="stockPrice" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="stockDistPrice">Dist. Price</label>
+                        <input type="number" step="0.01" class="form-control" id="stockDistPrice" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="stockMRP">MRP</label>
+                        <input type="number" step="0.01" class="form-control" id="stockMRP" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:0;border:none;margin-top:20px;">
+                    <button class="btn btn-ghost" onclick="closeModal('stockModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveStock()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Modal -->
+    <div class="modal-overlay" id="customerModal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Add Customer</h3>
+                <button class="modal-close" onclick="closeModal('customerModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="customerForm" onsubmit="event.preventDefault(); saveCustomer();">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="custId">Customer ID *</label>
+                            <input type="text" class="form-control" id="custId" placeholder="e.g. CUST001" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="custName">Name *</label>
+                            <input type="text" class="form-control" id="custName" placeholder="Customer name" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="custPhone">Phone *</label>
+                            <input type="tel" class="form-control" id="custPhone" placeholder="Phone number" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="custEmail">Email</label>
+                            <input type="email" class="form-control" id="custEmail" placeholder="Email address">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="custAddress">Address</label>
+                        <input type="text" class="form-control" id="custAddress" placeholder="Address">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="custCity">City</label>
+                        <input type="text" class="form-control" id="custCity" placeholder="City">
+                    </div>
+                    <div class="modal-footer" style="padding:0;border:none;margin-top:20px;">
+                        <button type="button" class="btn btn-ghost"
+                            onclick="closeModal('customerModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Customer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offer Modal -->
+    <div class="modal-overlay" id="offerModal">
+        <div class="modal" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3>Create Special Offer</h3>
+                <button class="modal-close" onclick="closeModal('offerModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="offerForm" onsubmit="event.preventDefault(); saveOffer();">
+                    <div class="form-group">
+                        <label class="form-label" for="offerStockId">Stock Item *</label>
+                        <select class="form-control" id="offerStockId" required>
+                            <option value="">Choose an item...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="offerText">Offer Text *</label>
+                        <input type="text" class="form-control" id="offerText" placeholder="e.g. Buy 2 Get 1 Free"
+                            required>
+                    </div>
+
+                    <div class="modal-footer" style="padding:0;border:none;margin-top:20px;">
+                        <button type="button" class="btn btn-ghost" onclick="closeModal('offerModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Offer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div class="modal-overlay" id="orderDetailModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="orderDetailTitle">Order Details</h3>
+                <button class="modal-close" onclick="closeModal('orderDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="orderDetailContent"></div>
+            <div class="modal-footer" id="orderDetailFooter"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/js/admin/core.js"></script>
+    <script src="/js/admin/super-admin.js"></script>
+    <script src="/js/admin/companies.js"></script>
+    <script src="/js/admin/company-dashboard.js"></script>
+    <script src="/js/admin/stock.js"></script>
+    <script src="/js/admin/customers.js"></script>
+    <script src="/js/admin/orders.js"></script>
+    <script src="/js/admin/reports-offers.js"></script>
+</body>
+
+</html>

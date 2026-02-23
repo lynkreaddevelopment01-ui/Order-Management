@@ -1,0 +1,323 @@
+const express = require('express');
+const router = express.Router();
+const { getDb } = require('../db');
+
+/**
+ * Parses offer text (e.g., "5+1", "6+2") and calculates bonus quantity
+ */
+function calculateBonus(offerText, purchasedQty) {
+    if (!offerText) return 0;
+    const match = offerText.match(/(\d+)\s*\+\s*(\d+)/);
+    if (match) {
+        const buyQty = parseInt(match[1]);
+        const freeQty = parseInt(match[2]);
+        if (buyQty > 0 && purchasedQty >= buyQty) {
+            return Math.floor(purchasedQty / buyQty) * freeQty;
+        }
+    }
+    return 0;
+}
+
+// Verify customer by subdomain or unique code
+router.post('/verify', async (req, res) => {
+    try {
+        const { uniqueCode, customerId } = req.body;
+        const db = getDb();
+
+        // If we have a tenant from subdomain, use that. Otherwise use uniqueCode from body.
+        const codeToUse = req.tenant ? req.tenant.unique_code : (uniqueCode || '');
+
+        console.log(`[AUTH] Verifying Customer: ${customerId} | Vendor: ${codeToUse}`);
+
+        const customer = await db.prepare(`
+      SELECT c.*, a.company_name
+      FROM customers c
+      JOIN admins a ON c.admin_id = a.id
+      WHERE a.unique_code = $1 AND c.customer_id_external = $2 AND c.is_active = 1 AND a.is_active = 1
+    `).get([String(codeToUse), String(customerId || '')]);
+
+        if (!customer) {
+            console.warn(`[AUTH] FAILED: Customer ${customerId} not found for Vendor ${codeToUse}`);
+            return res.status(401).json({ error: 'Invalid Customer ID. Please check and try again.' });
+        }
+
+        console.log(`[AUTH] SUCCESS: Verified ${customer.name} (ID: ${customer.id})`);
+
+        res.json({
+            success: true,
+            customer: {
+                id: customer.id,
+                name: customer.name,
+                phone: customer.phone,
+                address: customer.address,
+                city: customer.city,
+                customer_id_external: customer.customer_id_external,
+                admin_id: customer.admin_id,
+                company_name: customer.company_name
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get available stock for customer (scoped to the admin/company) with pagination and search
+router.get(['/stock', '/stock/:uniqueCode'], async (req, res) => {
+    try {
+        const db = getDb();
+        const code = req.tenant ? req.tenant.unique_code : req.params.uniqueCode;
+
+        if (!code) {
+            return res.status(404).json({ error: 'Order link invalid' });
+        }
+
+        const admin = await db.prepare(`
+          SELECT * FROM admins WHERE unique_code = $1 AND is_active = 1
+        `).get([code]);
+
+        if (!admin) {
+            return res.status(404).json({ error: 'Company portal not found or invalid link.' });
+        }
+
+        const adminId = admin.id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+        const search = req.query.search || '';
+
+        let whereClause = 'WHERE s.admin_id = $1 AND s.is_active = 1 AND s.quantity > 0';
+        let params = [adminId];
+
+        if (search) {
+            whereClause += " AND (LOWER(s.item_name) LIKE LOWER($2) OR LOWER(s.category) LIKE LOWER($2) OR LOWER(s.item_code) LIKE LOWER($2))";
+            params.push(`%${search}%`);
+        }
+
+        // Get total count for pagination
+        const countQuery = `SELECT COUNT(*) as count FROM stock s ${whereClause}`;
+        const totalRow = await db.prepare(countQuery).get(params);
+        const total = totalRow.count;
+
+        // Get paginated stock
+        const stock = await db.prepare(`
+            SELECT s.id, s.item_code, s.item_name, s.category, s.unit, s.quantity, s.price,
+                CASE WHEN so.id IS NOT NULL AND so.is_active = 1 THEN 1 ELSE 0 END as has_offer,
+                so.offer_text, so.discount_percent, so.offer_price
+            FROM stock s
+            LEFT JOIN special_offers so ON s.id = so.stock_id AND so.is_active = 1
+            ${whereClause}
+            ORDER BY has_offer DESC, s.item_name ASC
+            LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+        `).all([...params, limit, offset]);
+
+        res.json({
+            stock,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            company_name: admin.company_name
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Place order — scoped to the admin/company
+router.post('/order', async (req, res) => {
+    try {
+        const { uniqueCode, customerId, items, notes } = req.body;
+        const db = getDb();
+
+        const codeToUse = req.tenant ? req.tenant.unique_code : (uniqueCode || '');
+
+        // Verify customer
+        const customer = await db.prepare(`
+          SELECT c.*, a.company_name, a.unique_code as vendor_code
+          FROM customers c
+          JOIN admins a ON c.admin_id = a.id
+          WHERE a.unique_code = $1 AND c.customer_id_external = $2 AND c.is_active = 1 AND a.is_active = 1
+        `).get([String(codeToUse), String(customerId || '')]);
+
+        if (!customer) {
+            return res.status(401).json({ error: 'Identity verification failed. Please check your Customer ID.' });
+        }
+
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Please add at least one item to your order' });
+        }
+
+        const adminId = Number(customer.admin_id);
+        console.log(`[ORDER] Processing order for Admin ID: ${adminId}, Customer: ${customer.name}`);
+
+        // Generate order number: ORD-(FIRST 4 OF COMPANY)-000001
+        const compPrefix = (customer.company_name || 'MED')
+            .toUpperCase()
+            .replace(/[^A-Z0-9]| /g, '')
+            .substring(0, 4)
+            .padEnd(4, 'X');
+
+        // Find the highest sequence number for this specific admin
+        const maxOrderRow = await db.prepare(`
+            SELECT MAX(CAST(SUBSTR(order_number, -6) AS INTEGER)) as max_num 
+            FROM orders 
+            WHERE admin_id = $1
+        `).get([adminId]);
+
+        const nextNum = (maxOrderRow && maxOrderRow.max_num) ? (parseInt(maxOrderRow.max_num) + 1) : 1;
+        const orderNumber = `ORD-${compPrefix}-${String(nextNum).padStart(6, '0')}`;
+        console.log(`[ORDER] Generated Branded Order Number: ${orderNumber}`);
+
+        let totalAmount = 0;
+        const orderItems = [];
+        const offerWarnings = [];
+
+        for (const item of items) {
+            const qty = parseInt(item.quantity) || 1;
+            const stockId = parseInt(item.stockId);
+            if (!stockId) continue;
+
+            const stockItem = await db.prepare(`
+                SELECT s.*, so.offer_price, so.offer_text, so.is_active as offer_active
+                FROM stock s
+                LEFT JOIN special_offers so ON s.id = so.stock_id AND so.is_active = 1
+                WHERE s.id = $1 AND s.admin_id = $2
+            `).get([stockId, adminId]);
+
+            if (stockItem) {
+                // First: Basic stock check for purchased qty
+                if (stockItem.quantity < qty) {
+                    return res.status(400).json({ error: `Insufficient stock for "${stockItem.item_name}". Only ${stockItem.quantity} units are available.` });
+                }
+
+                let bonusQty = stockItem.offer_active ? calculateBonus(stockItem.offer_text, qty) : 0;
+                let appliedOffer = stockItem.offer_active ? stockItem.offer_text : null;
+                let offerSkipped = 0;
+                let missedOfferText = null;
+
+                // Second: Check if bonus stock is available. If not, proceed without offer and add warning.
+                if (bonusQty > 0 && stockItem.quantity < (qty + bonusQty)) {
+                    console.warn(`[ORDER] Offer stock low for ${stockItem.item_name}. (Req: ${qty}, Bonus: ${bonusQty}, Avail: ${stockItem.quantity})`);
+                    offerWarnings.push(`Offer (${stockItem.offer_text}) for "${stockItem.item_name}" could not be applied due to low stock. Team will contact you.`);
+                    offerSkipped = 1;
+                    missedOfferText = stockItem.offer_text;
+                    bonusQty = 0;
+                    appliedOffer = null;
+                }
+
+                const rawPrice = (stockItem.offer_active && stockItem.offer_price) ? stockItem.offer_price : stockItem.price;
+                const unitPrice = parseFloat(rawPrice) || 0;
+
+                orderItems.push({
+                    stockId: Number(stockItem.id),
+                    itemName: String(stockItem.item_name),
+                    quantity: Number(qty),
+                    unitPrice: Number(unitPrice),
+                    totalPrice: Number(unitPrice * qty),
+                    isOffer: appliedOffer ? 1 : 0,
+                    bonusQty: bonusQty,
+                    appliedOffer: appliedOffer,
+                    offerSkipped: offerSkipped,
+                    missedOfferText: missedOfferText,
+                    distPrice: Number(stockItem.dist_price || 0),
+                    mrp: Number(stockItem.mrp || 0)
+                });
+                totalAmount += (unitPrice * qty);
+            } else {
+                return res.status(404).json({ error: `Item not found.` });
+            }
+        }
+
+        if (orderItems.length === 0) {
+            console.warn('[ORDER] No valid items found in request');
+            return res.status(400).json({ error: 'No valid items in order or insufficient stock' });
+        }
+
+        // Manual Transaction
+        const client = await db.pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            console.log(`[ORDER] TX START for Customer ${customer.id}`);
+
+            // Combine user notes with system generated offer warnings
+            const finalNotes = [notes, ...offerWarnings].filter(Boolean).join('\n');
+
+            // Use standard INSERT without RETURNING for SQLite compatibility
+            const orderRes = await client.query(
+                'INSERT INTO orders (admin_id, order_number, customer_id, total_amount, status, notes) VALUES ($1, $2, $3, $4, $5, $6)',
+                [adminId, orderNumber, customer.id, totalAmount, 'pending', finalNotes]
+            );
+
+            console.log(`[ORDER] Inserted record into 'orders' table. result:`, !!orderRes);
+
+            const orderId = orderRes.insertId || (orderRes.rows && orderRes.rows[0]?.id);
+            console.log(`[ORDER] Retrieved Order ID: ${orderId}`);
+
+            if (!orderId) {
+                throw new Error('Failed to retrieve new order ID after insertion');
+            }
+
+            for (const oi of orderItems) {
+                console.log(`[ORDER] Inserting item: ${oi.itemName} (Qty: ${oi.quantity}, Bonus: ${oi.bonusQty})`);
+                await client.query(
+                    'INSERT INTO order_items (order_id, stock_id, item_name, quantity, unit_price, total_price, is_offer_item, bonus_quantity, applied_offer, offer_skipped, missed_offer_text, dist_price, mrp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
+                    [orderId, oi.stockId, oi.itemName, oi.quantity, oi.unitPrice, oi.totalPrice, oi.isOffer, oi.bonusQty, oi.appliedOffer, oi.offerSkipped, oi.missedOfferText, oi.distPrice, oi.mrp]
+                );
+
+                console.log(`[ORDER] Updating stock for ID ${oi.stockId} (Reducing by ${oi.quantity + oi.bonusQty})`);
+                await client.query(
+                    'UPDATE stock SET quantity = quantity - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                    [oi.quantity + oi.bonusQty, oi.stockId]
+                );
+            }
+
+            await client.query('COMMIT');
+            console.log(`[ORDER] TX COMMIT SUCCESS: ${orderNumber}`);
+            res.json({ success: true, orderNumber, orderId, totalAmount });
+        } catch (txErr) {
+            console.error('[ORDER] TRANSACTION ERROR:', txErr.message);
+            console.error(txErr.stack);
+            await client.query('ROLLBACK');
+            throw txErr;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('[ORDER] FATAL ERROR:', err.message);
+        console.error(err.stack);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get customer's order history
+router.get('/orders/:uniqueCode/:customerId', async (req, res) => {
+    try {
+        const db = getDb();
+        const customer = await db.prepare(`
+      SELECT c.* 
+      FROM customers c
+      JOIN admins a ON c.admin_id = a.id
+      WHERE a.unique_code = $1 AND c.customer_id_external = $2 AND c.is_active = 1
+    `).get([req.params.uniqueCode, req.params.customerId]);
+
+        if (!customer) {
+            return res.status(401).json({ error: 'Invalid customer' });
+        }
+
+        const orders = await db.prepare(`
+      SELECT * FROM orders WHERE customer_id = $1 AND admin_id = $2 ORDER BY created_at DESC
+    `).all([customer.id, customer.admin_id]);
+
+        // Fetch items for each order
+        for (const order of orders) {
+            order.items = await db.prepare('SELECT * FROM order_items WHERE order_id = $1').all([order.id]);
+        }
+
+        res.json({ orders });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+module.exports = router;
