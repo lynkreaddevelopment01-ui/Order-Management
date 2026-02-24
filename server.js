@@ -2,11 +2,10 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const db = require('./db');
+const db = require('./database');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const customerRoutes = require('./routes/customer');
-const reportRoutes = require('./routes/reports');
 
 const { tenantHandler } = require('./middleware/tenant');
 
@@ -29,7 +28,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/customer', customerRoutes);
-app.use('/api/reports', reportRoutes);
 
 // 1. Super Admin Portal
 app.get('/super-admin', (req, res) => {

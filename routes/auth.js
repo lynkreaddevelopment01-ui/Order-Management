@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { getDb } = require('../db');
+const { getDb } = require('../database');
 const { v4: uuidv4 } = require('uuid');
 const { authenticateToken, requireSuperAdmin, JWT_SECRET } = require('../middleware/auth');
 

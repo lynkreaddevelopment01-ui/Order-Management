@@ -9,7 +9,7 @@ async function loadCustomersPage(page = 1) {
     <div class="section-header">
       <div><h2>Customers</h2></div>
       <div class="section-actions">
-        <a href="/customer_template.csv" download class="btn btn-ghost btn-sm">📥 Download Template</a>
+        <a href="/api/admin/templates/customer" class="btn btn-ghost btn-sm">📥 Download Template</a>
         <label class="btn btn-outline btn-sm" style="position:relative;">
           📁 Import CSV
           <input type="file" accept=".csv" onchange="importCustomerCSV(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">

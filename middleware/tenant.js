@@ -1,4 +1,4 @@
-const { prepare } = require('../db');
+const { prepare } = require('../database');
 
 /**
  * Middleware to identify the vendor/admin based on the subdomain.

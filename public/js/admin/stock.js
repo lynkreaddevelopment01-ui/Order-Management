@@ -9,7 +9,7 @@ async function loadStockPage(page = 1) {
     <div class="section-header">
       <div><h2>Stock Inventory</h2></div>
       <div class="section-actions">
-        <a href="/stock_template.csv" download class="btn btn-ghost btn-sm">📥 Download Template</a>
+        <a href="/api/admin/templates/stock" class="btn btn-ghost btn-sm">📥 Download Template</a>
         <label class="btn btn-outline btn-sm" style="position:relative;">
           📁 Import CSV
           <input type="file" accept=".csv" onchange="importStockCSV(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
@@ -167,7 +167,7 @@ async function saveStock() {
   }
 
   try {
-    const url = id ? `/admin/stock/${id}` : '/admin/stock';
+    const url = id ? `/api/admin/stock/${id}` : '/api/admin/stock';
     const method = id ? 'PUT' : 'POST';
     const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
     const data = await res.json();

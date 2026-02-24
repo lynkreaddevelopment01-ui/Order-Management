@@ -5,7 +5,7 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const { getDb } = require('../db');
+const { getDb } = require('../database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 // Configure multer for CSV uploads
@@ -28,6 +28,17 @@ const upload = multer({
 function getAdminId(req) {
     return req.user.id;
 }
+
+// ========== TEMPLATE DOWNLOADS ==========
+router.get('/templates/stock', (req, res) => {
+    const file = path.join(__dirname, '..', 'uploads', 'sample_stock_data.csv');
+    res.download(file, 'stock_template.csv');
+});
+
+router.get('/templates/customer', (req, res) => {
+    const file = path.join(__dirname, '..', 'uploads', 'sample_customer_data.csv');
+    res.download(file, 'customer_template.csv');
+});
 
 // ========== STOCK MANAGEMENT ==========
 
@@ -98,7 +109,7 @@ router.post('/stock/import', authenticateToken, requireAdmin, upload.single('csv
 
             if (!itemName) continue;
 
-            const rawCode = item.item_code || item.ItemCode || item.code || item.Code || '';
+            const rawCode = item['Item Code'] || item.item_code || item.ItemCode || item.code || item.Code || '';
             const itemCode = rawCode || ('PRD-' + String(recordsCount).padStart(4, '0'));
             const category = item.manufacturer || item.Manufacturer || item.category || item.Category || '';
             const unit = item.unit || item.Unit || 'Pcs';

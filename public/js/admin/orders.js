@@ -104,9 +104,7 @@ function renderOrdersTable(orders) {
       <td><span class="badge badge-${statusColors[o.status] || 'neutral'}">${o.status}</span></td>
       <td><span class="text-sm text-muted">${new Date(o.created_at).toLocaleString()}</span></td>
       <td>
-        <button class="btn btn-ghost btn-sm" onclick="viewOrder(${o.id})" title="View Details">👁️</button>
-        <button class="btn btn-ghost btn-sm" onclick="downloadOrderPDF(${o.id})" title="Download PDF">📄</button>
-        <button class="btn btn-ghost btn-sm" onclick="downloadOrderExcel(${o.id})" title="Download Excel">📊</button>
+        <button class="btn btn-ghost btn-sm" onclick="viewOrder(${o.id})" title="View Details">👁️ View</button>
       </td>
     </tr>
   `).join('');
@@ -257,8 +255,6 @@ async function viewOrder(id) {
     }
 
     document.getElementById('orderDetailFooter').innerHTML = `
-      <button class="btn btn-outline btn-sm" onclick="downloadOrderPDF(${o.id})">📄 PDF</button>
-      <button class="btn btn-outline btn-sm" onclick="downloadOrderExcel(${o.id})">📊 Excel</button>
       <button class="btn btn-ghost btn-sm" onclick="closeModal('orderDetailModal')">Close</button>
     `;
 

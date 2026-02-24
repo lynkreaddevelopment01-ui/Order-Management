@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../db');
+const { getDb } = require('../database');
 
 /**
  * Parses offer text (e.g., "5+1", "6+2") and calculates bonus quantity

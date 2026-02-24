@@ -1,0 +1,6 @@
+Customer ID,Customer Name,Phone Number,Email,Address,City
+CUST-001,John Doe,9876543210,john@example.com,"123 Main St, Apartment 4B",New York
+CUST-002,Jane Smith,9123456789,jane@company.com,"456 Oak Road",Los Angeles
+CUST-003,Bob Johnson,9988776655,bob@test.com,"789 Pine Avenue",Chicago
+CUST-004,Alice Brown,9445566778,alice@email.org,"321 Maple Drive",Houston
+CUST-005,Charlie Wilson,9667788990,charlie@web.com,"555 Cedar Lane",Phoenix
