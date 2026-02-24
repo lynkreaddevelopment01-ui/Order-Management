@@ -123,14 +123,19 @@ function renderProductsIntoAccordion(container, items) {
 function renderItemHtml(item) {
     const qtyInCart = cart[item.id] || 0;
     const isOutOfStock = item.quantity <= 0;
+    const isLowStock = !isOutOfStock && item.quantity <= 10;
 
     return `
         <div class="stock-item ${isOutOfStock ? 'out-of-stock-item' : ''}" id="item-${item.id}">
             <div class="item-info">
                 <div class="item-name">${item.item_name}</div>
                 <div class="item-meta">
-                    ${item.item_code} | ${item.unit} 
+                    ${item.item_code} | ${item.unit} | 
+                    <span style="font-weight: 700; color: ${isOutOfStock ? '#ef4444' : (isLowStock ? '#f59e0b' : '#10b981')}">
+                        ${isOutOfStock ? '🚫 Out of Stock' : `✅ Available: ${item.quantity}`}
+                    </span>
                     ${item.has_offer ? `<span class="badge badge-warning" style="margin-left:8px;">🏷️ ${item.offer_text}</span>` : ''}
+                    ${isLowStock ? `<span style="margin-left:8px; color:#9a3412; font-weight:800; font-size:0.6rem; text-transform:uppercase; background:#ffedd5; padding:2px 8px; border-radius:100px; border:1px solid #fed7aa; display:inline-flex; align-items:center; gap:3px;">⚠️ Low Stock</span>` : ''}
                 </div>
             </div>
             <div class="qty-controls">
