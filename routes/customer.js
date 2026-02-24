@@ -61,6 +61,60 @@ router.post('/verify', async (req, res) => {
     }
 });
 
+// Get list of manufacturers for a tenant
+router.get('/manufacturers/:uniqueCode', async (req, res) => {
+    try {
+        const db = getDb();
+        const code = req.params.uniqueCode;
+
+        const admin = await db.prepare(`
+          SELECT id FROM admins WHERE unique_code = $1 AND is_active = 1
+        `).get([code]);
+
+        if (!admin) return res.status(404).json({ error: 'Vendor not found' });
+
+        const manufacturers = await db.prepare(`
+            SELECT DISTINCT category as name 
+            FROM stock 
+            WHERE admin_id = $1 AND is_active = 1 AND quantity > 0
+            ORDER BY category ASC
+        `).all([admin.id]);
+
+        res.json({ manufacturers: manufacturers.map(m => m.name || 'General') });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get products for a specific manufacturer
+router.get('/stock-by-manufacturer/:uniqueCode', async (req, res) => {
+    try {
+        const db = getDb();
+        const code = req.params.uniqueCode;
+        const manufacturer = req.query.manufacturer || 'General';
+
+        const admin = await db.prepare(`
+          SELECT id FROM admins WHERE unique_code = $1 AND is_active = 1
+        `).get([code]);
+
+        if (!admin) return res.status(404).json({ error: 'Vendor not found' });
+
+        const stock = await db.prepare(`
+            SELECT s.id, s.item_code, s.item_name, s.category, s.unit, s.quantity, s.price,
+                CASE WHEN so.id IS NOT NULL AND so.is_active = 1 THEN 1 ELSE 0 END as has_offer,
+                so.offer_text, so.discount_percent, so.offer_price
+            FROM stock s
+            LEFT JOIN special_offers so ON s.id = so.stock_id AND so.is_active = 1
+            WHERE s.admin_id = $1 AND s.is_active = 1 AND s.quantity > 0 AND (s.category = $2 OR (s.category IS NULL AND $2 = 'General'))
+            ORDER BY has_offer DESC, s.item_name ASC
+        `).all([admin.id, manufacturer === 'General' ? null : manufacturer]);
+
+        res.json({ stock });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Get available stock for customer (scoped to the admin/company) with pagination and search
 router.get(['/stock', '/stock/:uniqueCode'], async (req, res) => {
     try {

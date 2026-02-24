@@ -708,34 +708,165 @@
             customerPagination.page = page;
 
             const area = document.getElementById('stockListArea');
+
+            // If searching, use paginated flat list
+            if (customerPagination.search) {
+                if (!append) area.innerHTML = '<div style="text-align:center; padding:40px;"><div class="spinner"></div></div>';
+                try {
+                    const search = customerPagination.search;
+                    const url = `/api/customer/stock/${uniqueCode}?page=${page}&limit=${customerPagination.limit}&search=${encodeURIComponent(search)}`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    customerPagination.totalPages = data.totalPages;
+
+                    if (append) {
+                        stockItems = [...stockItems, ...data.stock];
+                    } else {
+                        stockItems = data.stock;
+                        area.innerHTML = '';
+                    }
+                    renderFlatStockList(stockItems);
+                    renderLoadMore();
+                } catch (err) {
+                    showToast('Search failed', 'error');
+                } finally {
+                    customerPagination.loading = false;
+                }
+                return;
+            }
+
+            // Normal view: Lazy Accordion mode
             if (!append) {
-                area.innerHTML = '<div style="text-align:center; padding:40px;"><div class="spinner"></div><p style="margin-top:12px; color:var(--text-muted); font-size:0.85rem;">Loading medical supplies...</p></div>';
+                area.innerHTML = '<div style="text-align:center; padding:40px;"><div class="spinner"></div></div>';
             }
 
             try {
-                const search = customerPagination.search;
-                const url = `/api/customer/stock/${uniqueCode}?page=${page}&limit=${customerPagination.limit}&search=${encodeURIComponent(search)}`;
-                const res = await fetch(url);
+                // Fetch JUST manufacturers
+                const res = await fetch(`/api/customer/manufacturers/${uniqueCode}`);
                 const data = await res.json();
-
-                customerPagination.totalPages = data.totalPages;
-
-                if (append) {
-                    stockItems = [...stockItems, ...data.stock];
-                } else {
-                    stockItems = data.stock;
-                    area.innerHTML = '';
-                }
-
-                renderStockList(stockItems);
-                renderLoadMore();
-                updateSummaryBar();
+                renderManufacturerAccordions(data.manufacturers);
             } catch (err) {
-                showToast('Failed to load items', 'error');
-                area.innerHTML = '<p style="text-align:center; padding:40px; color:var(--danger-500);">Error loading stock. Please refresh.</p>';
+                showToast('Failed to load manufacturers', 'error');
+                area.innerHTML = '<p style="text-align:center; padding:40px; color:var(--danger-500);">Error loading manufacturers.</p>';
             } finally {
                 customerPagination.loading = false;
             }
+        }
+
+        function renderManufacturerAccordions(manufacturers) {
+            const area = document.getElementById('stockListArea');
+            if (!manufacturers || manufacturers.length === 0) {
+                area.innerHTML = '<div class="empty-state"><h3>No items available</h3></div>';
+                return;
+            }
+
+            let html = '';
+            manufacturers.forEach((mfr, index) => {
+                const groupId = `group-${index}`;
+                html += `
+                    <div class="order-manufacturer-header" 
+                         onclick="toggleAccordion('${groupId}', '${encodeURIComponent(mfr)}')" id="header-${groupId}">
+                        <span>${mfr}</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content" id="${groupId}">
+                        <div style="text-align:center; padding:20px;"><div class="spinner-sm"></div></div>
+                    </div>
+                `;
+            });
+
+            area.innerHTML = html;
+        }
+
+        async function toggleAccordion(groupId, mfrNameEncoded, forceOpen = false) {
+            const content = document.getElementById(groupId);
+            const header = document.getElementById(`header-${groupId}`);
+            if (!content || !header) return;
+
+            const isOpening = forceOpen || !content.classList.contains('show');
+
+            if (isOpening) {
+                content.classList.add('show');
+                header.classList.add('active');
+
+                // Lazy load products if needed
+                if (content.getAttribute('data-loaded') !== 'true' && mfrNameEncoded) {
+                    content.innerHTML = '<div style="text-align:center; padding:20px;"><div class="spinner-sm"></div></div>';
+                    try {
+                        const res = await fetch(`/api/customer/stock-by-manufacturer/${uniqueCode}?manufacturer=${mfrNameEncoded}`);
+                        const data = await res.json();
+                        renderProductsIntoAccordion(content, data.stock);
+                        content.setAttribute('data-loaded', 'true');
+                    } catch (err) {
+                        content.innerHTML = '<p style="padding:10px; color:red; font-size:0.8rem;">Failed to load items.</p>';
+                    }
+                }
+            } else {
+                content.classList.remove('show');
+                header.classList.remove('active');
+            }
+        }
+
+        function renderProductsIntoAccordion(container, items) {
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p style="padding:20px; color:var(--text-muted); text-align:center;">No items available.</p>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => {
+                const qty = cart[item.id] || 0;
+                const hasOffer = item.has_offer;
+                return `
+                    <div class="stock-item ${hasOffer ? 'offer-item' : ''}" id="stock-item-${item.id}" style="border-bottom: 1px solid #f1f5f9; margin: 0; border-radius: 0;">
+                      <div class="item-info">
+                        <div class="item-name">
+                          ${item.item_name}
+                          ${hasOffer ? `<span class="badge badge-warning" style="font-size:0.65rem;margin-left:6px;">🏷️ ${item.offer_text || 'OFFER'}</span>` : ''}
+                        </div>
+                        <div class="item-meta" style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+                          <span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; background:var(--neutral-100); padding:2px 8px; border-radius:6px;">📦 ${item.unit}</span>
+                          <span style="font-size:0.85rem; font-weight:800; color:${item.quantity > 5 ? 'var(--success-700)' : 'var(--danger-600)'}; display:flex; align-items:center; gap:4px;">
+                            <span style="height:6px; width:6px; background:currentColor; border-radius:50%;"></span>
+                            STOCK: ${item.quantity}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="qty-controls">
+                        <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
+                        <div class="qty-value" id="qty-${item.id}">${qty}</div>
+                        <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
+                      </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderFlatStockList(items) {
+            const area = document.getElementById('stockListArea');
+            if (items.length === 0) {
+                area.innerHTML = '<div class="empty-state"><h3>No matching items</h3></div>';
+                return;
+            }
+            area.innerHTML = items.map(item => {
+                const qty = cart[item.id] || 0;
+                const hasOffer = item.has_offer;
+                return `
+                    <div class="stock-item ${hasOffer ? 'offer-item' : ''}" id="stock-item-${item.id}">
+                        <div class="item-info">
+                            <div class="item-name">${item.item_name}</div>
+                            <div class="item-meta">
+                                <span class="text-muted">Mfr: ${item.category || 'General'}</span> | 
+                                <span class="text-muted">Stock: ${item.quantity}</span>
+                            </div>
+                        </div>
+                        <div class="qty-controls">
+                            <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
+                            <div class="qty-value" id="qty-${item.id}">${qty}</div>
+                            <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderLoadMore() {
@@ -748,117 +879,10 @@
                 container.style.cssText = 'padding: 24px; text-align: center;';
                 container.innerHTML = `
                     <button class="btn btn-outline" style="width:100%; max-width:300px; border-radius:12px;" onclick="loadStock(${customerPagination.page + 1}, true)">
-                        Load More Items
+                        Load More Results
                     </button>
                 `;
                 document.getElementById('stockListArea').appendChild(container);
-            }
-        }
-
-
-        // ===== RENDER STOCK LIST =====
-        function renderStockList(items) {
-            const area = document.getElementById('stockListArea');
-            if (!items) items = [];
-
-            if (items.length === 0) {
-                const emptyMsg = customerPagination.search ? 'No items match your search' : 'No items available';
-                area.innerHTML = `
-                  <div class="empty-state">
-                    <div class="empty-icon">📦</div>
-                    <h3>${emptyMsg}</h3>
-                    <p>Check spelling or try different keywords</p>
-                  </div>
-                `;
-                return;
-            }
-
-            // Group by Manufacturer (renamed from category)
-            const manufacturers = {};
-            const offers = items.filter(i => i && i.has_offer);
-            const others = items.filter(i => i && !i.has_offer);
-
-            if (offers.length > 0) {
-                manufacturers['Special Offers ✨'] = offers;
-            }
-
-            others.forEach(item => {
-                const mfr = item.category || 'General';
-                if (!manufacturers[mfr]) manufacturers[mfr] = [];
-                manufacturers[mfr].push(item);
-            });
-
-            let html = '';
-            let groupIndex = 0;
-            for (const [mfr, mfrItems] of Object.entries(manufacturers)) {
-                const isSpecial = mfr.includes('Special Offers');
-                const groupId = `group-${groupIndex++}`;
-
-                html += `
-                    <div class="order-manufacturer-header ${isSpecial ? 'special-offers-header' : ''}" 
-                         onclick="toggleAccordion('${groupId}')" id="header-${groupId}">
-                        <span>${mfr}</span>
-                        <span class="accordion-icon">▼</span>
-                    </div>
-                    <div class="accordion-content" id="${groupId}">
-                `;
-
-                html += mfrItems.map(item => {
-                    if (!item) return '';
-                    const qty = cart[item.id] || 0;
-                    const hasOffer = item.has_offer;
-
-                    return `
-                        <div class="stock-item ${hasOffer ? 'offer-item' : ''}" id="stock-item-${item.id}" style="border-bottom: 1px solid #f1f5f9; margin: 0; border-radius: 0;">
-                          <div class="item-info">
-                            <div class="item-name">
-                              ${item.item_name}
-                              ${hasOffer ? `<span class="badge badge-warning" style="font-size:0.65rem;margin-left:6px;">🏷️ ${item.offer_text || 'OFFER'}</span>` : ''}
-                            </div>
-                            <div class="item-meta" style="display:flex;align-items:center;gap:12px;margin-top:8px;">
-                              <span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; background:var(--neutral-100); padding:2px 8px; border-radius:6px;">📦 ${item.unit}</span>
-                              <span style="font-size:0.85rem; font-weight:800; color:${item.quantity > 5 ? 'var(--success-700)' : 'var(--danger-600)'}; display:flex; align-items:center; gap:4px;">
-                                <span style="height:6px; width:6px; background:currentColor; border-radius:50%;"></span>
-                                STOCK: ${item.quantity}
-                              </span>
-                            </div>
-                          </div>
-                          <div class="qty-controls">
-                            <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
-                            <div class="qty-value" id="qty-${item.id}">${qty}</div>
-                            <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
-                          </div>
-                        </div>
-                    `;
-                }).join('');
-
-                html += `</div>`;
-            }
-
-            area.innerHTML = html;
-
-            // Auto open first one if not searching
-            if (!customerPagination.search && groupIndex > 0) {
-                toggleAccordion('group-0');
-            } else if (customerPagination.search) {
-                // Open all if searching
-                for (let i = 0; i < groupIndex; i++) {
-                    toggleAccordion(`group-${i}`, true);
-                }
-            }
-        }
-
-        function toggleAccordion(groupId, forceOpen = false) {
-            const content = document.getElementById(groupId);
-            const header = document.getElementById(`header-${groupId}`);
-            if (!content || !header) return;
-
-            if (forceOpen) {
-                content.classList.add('show');
-                header.classList.add('active');
-            } else {
-                content.classList.toggle('show');
-                header.classList.toggle('active');
             }
         }
 
