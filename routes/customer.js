@@ -73,7 +73,7 @@ router.get('/manufacturers/:uniqueCode', async (req, res) => {
 
         if (!admin) return res.status(404).json({ error: 'Vendor not found' });
 
-        const manufacturers = await db.prepare(`
+        const manufacturersRows = await db.prepare(`
             SELECT DISTINCT CASE WHEN category IS NULL OR category = '' THEN 'General' ELSE category END as name 
             FROM stock 
             WHERE admin_id = $1 AND is_active = 1 AND quantity > 0
@@ -84,12 +84,16 @@ router.get('/manufacturers/:uniqueCode', async (req, res) => {
             SELECT 1 FROM special_offers WHERE admin_id = $1 AND is_active = 1 LIMIT 1
         `).get([admin.id]);
 
-        const names = manufacturers.map(m => m.name);
+        // Filter out General and Special Offers if they exist in the names to re-order them
+        let names = manufacturersRows.map(m => m.name).filter(n => n !== 'General');
+
+        const finalList = ['General'];
         if (hasOffers) {
-            names.unshift('Special Offers ✨');
+            finalList.push('Special Offers ✨');
         }
 
-        res.json({ manufacturers: names });
+        // Combine with alphabetical others
+        res.json({ manufacturers: [...finalList, ...names] });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
