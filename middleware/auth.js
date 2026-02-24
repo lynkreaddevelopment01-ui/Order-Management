@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { getDb } = require('../db');
+const { getDb } = require('../database');
 const JWT_SECRET = process.env.JWT_SECRET || 'medical-order-mgmt-secret-key-2024';
 
 async function authenticateToken(req, res, next) {
