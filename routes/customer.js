@@ -164,12 +164,16 @@ router.get(['/stock', '/stock/:uniqueCode'], async (req, res) => {
         const offset = (page - 1) * limit;
         const search = req.query.search || '';
 
-        let whereClause = 'WHERE s.admin_id = $1 AND s.is_active = 1 AND s.quantity > 0';
+        let whereClause = 'WHERE s.admin_id = $1 AND s.is_active = 1';
         let params = [adminId];
 
         if (search) {
+            // When searching, include items with zero stock
             whereClause += " AND (LOWER(s.item_name) LIKE LOWER($2) OR LOWER(COALESCE(s.category, 'General')) LIKE LOWER($2) OR LOWER(s.item_code) LIKE LOWER($2))";
             params.push(`%${search}%`);
+        } else {
+            // Default view only shows in-stock items
+            whereClause += " AND s.quantity > 0";
         }
 
         // Get total count for pagination
@@ -265,8 +269,10 @@ router.post('/order', async (req, res) => {
 
             if (stockItem) {
                 // First: Basic stock check for purchased qty
+                // Allow backordering (Zero stock ordering)
                 if (stockItem.quantity < qty) {
-                    return res.status(400).json({ error: `Insufficient stock for "${stockItem.item_name}". Only ${stockItem.quantity} units are available.` });
+                    console.log(`[ORDER] Backorder for ${stockItem.item_name}: Requested ${qty}, Available ${stockItem.quantity}`);
+                    // We allow it, but we won't give bonuses if stock is low for the bonus itself
                 }
 
                 let bonusQty = stockItem.offer_active ? calculateBonus(stockItem.offer_text, qty) : 0;

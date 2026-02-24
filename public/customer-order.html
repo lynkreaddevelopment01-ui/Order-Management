@@ -90,6 +90,12 @@
             animation: fadeInUp 0.4s ease;
         }
 
+        .out-of-stock-item {
+            opacity: 0.8;
+            border-left: 3px solid #ef4444 !important;
+            background: #fffafa !important;
+        }
+
         .order-success-card .success-icon {
             width: 72px;
             height: 72px;
@@ -815,32 +821,7 @@
                 return;
             }
 
-            container.innerHTML = items.map(item => {
-                const qty = cart[item.id] || 0;
-                const hasOffer = item.has_offer;
-                return `
-                    <div class="stock-item ${hasOffer ? 'offer-item' : ''}" id="stock-item-${item.id}" style="border-bottom: 1px solid #f1f5f9; margin: 0; border-radius: 0;">
-                      <div class="item-info">
-                        <div class="item-name">
-                          ${item.item_name}
-                          ${hasOffer ? `<span class="badge badge-warning" style="font-size:0.65rem;margin-left:6px;">🏷️ ${item.offer_text || 'OFFER'}</span>` : ''}
-                        </div>
-                        <div class="item-meta" style="display:flex;align-items:center;gap:12px;margin-top:8px;">
-                          <span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; background:var(--neutral-100); padding:2px 8px; border-radius:6px;">📦 ${item.unit}</span>
-                          <span style="font-size:0.85rem; font-weight:800; color:${item.quantity > 5 ? 'var(--success-700)' : 'var(--danger-600)'}; display:flex; align-items:center; gap:4px;">
-                            <span style="height:6px; width:6px; background:currentColor; border-radius:50%;"></span>
-                            STOCK: ${item.quantity}
-                          </span>
-                        </div>
-                      </div>
-                      <div class="qty-controls">
-                        <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
-                        <div class="qty-value" id="qty-${item.id}">${qty}</div>
-                        <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
-                      </div>
-                    </div>
-                `;
-            }).join('');
+            container.innerHTML = items.map(item => renderItemHtml(item)).join('');
         }
 
         function renderFlatStockList(items) {
@@ -849,26 +830,50 @@
                 area.innerHTML = '<div class="empty-state"><h3>No matching items</h3></div>';
                 return;
             }
-            area.innerHTML = items.map(item => {
-                const qty = cart[item.id] || 0;
-                const hasOffer = item.has_offer;
-                return `
-                    <div class="stock-item ${hasOffer ? 'offer-item' : ''}" id="stock-item-${item.id}">
-                        <div class="item-info">
-                            <div class="item-name">${item.item_name}</div>
-                            <div class="item-meta">
-                                <span class="text-muted">Mfr: ${item.category || 'General'}</span> | 
-                                <span class="text-muted">Stock: ${item.quantity}</span>
-                            </div>
-                        </div>
-                        <div class="qty-controls">
-                            <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
-                            <div class="qty-value" id="qty-${item.id}">${qty}</div>
-                            <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
-                        </div>
+
+            const available = items.filter(i => i.quantity > 0);
+            const outOfStock = items.filter(i => i.quantity <= 0);
+
+            let html = '';
+
+            if (available.length > 0) {
+                html += available.map(item => renderItemHtml(item)).join('');
+            }
+
+            if (outOfStock.length > 0) {
+                html += `
+                    <div style="padding: 24px 16px 12px; font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 12px;">
+                        <span style="flex-shrink: 0;">Currently Out of Stock</span>
+                        <div style="height: 1px; background: #e2e8f0; flex-grow: 1;"></div>
                     </div>
                 `;
-            }).join('');
+                html += outOfStock.map(item => renderItemHtml(item)).join('');
+            }
+
+            area.innerHTML = html;
+        }
+
+        function renderItemHtml(item) {
+            const qty = cart[item.id] || 0;
+            const hasOffer = item.has_offer;
+            const isOut = item.quantity <= 0;
+
+            return `
+                <div class="stock-item ${hasOffer ? 'offer-item' : ''} ${isOut ? 'out-of-stock-item' : ''}" id="stock-item-${item.id}">
+                    <div class="item-info">
+                        <div class="item-name">${item.item_name} ${isOut ? '<span style="font-size:0.6rem; color:#ef4444; border:1px solid #fee2e2; background:#fef2f2; padding:1px 6px; border-radius:4px; margin-left:6px;">BACKORDER</span>' : ''}</div>
+                        <div class="item-meta">
+                            <span class="text-muted">Mfr: ${item.category || 'General'}</span> | 
+                            <span style="color:${isOut ? '#ef4444' : 'inherit'}; font-weight:${isOut ? '700' : 'normal'}">Stock: ${item.quantity}</span>
+                        </div>
+                    </div>
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
+                        <div class="qty-value" id="qty-${item.id}">${qty}</div>
+                        <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
+                    </div>
+                </div>
+            `;
         }
 
         function renderLoadMore() {
@@ -900,7 +905,8 @@
         // ===== CART =====
         function updateQty(stockId, delta, maxQty) {
             const current = cart[stockId] || 0;
-            const newQty = Math.max(0, Math.min(maxQty, current + delta));
+            // Removed Math.min(maxQty) to allow zero-stock/over-ordering
+            const newQty = Math.max(0, current + delta);
 
             if (newQty === 0) {
                 delete cart[stockId];
