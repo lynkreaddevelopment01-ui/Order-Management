@@ -123,19 +123,21 @@ function renderProductsIntoAccordion(container, items) {
 function renderItemHtml(item) {
     const qtyInCart = cart[item.id] || 0;
     const isOutOfStock = item.quantity <= 0;
-    const isLowStock = !isOutOfStock && item.quantity <= 10;
 
     return `
-        <div class="stock-item ${isOutOfStock ? 'out-of-stock-item' : ''}" id="item-${item.id}">
+        <div class="stock-item ${item.has_offer ? 'offer-item' : ''} ${isOutOfStock ? 'out-of-stock-item' : ''}" id="item-${item.id}">
             <div class="item-info">
-                <div class="item-name">${item.item_name}</div>
-                <div class="item-meta">
-                    ${item.item_code} | ${item.unit} | 
-                    <span style="font-weight: 700; color: ${isOutOfStock ? '#ef4444' : (isLowStock ? '#f59e0b' : '#10b981')}">
-                        ${isOutOfStock ? '🚫 Out of Stock' : `✅ Available: ${item.quantity}`}
+                <div class="item-name" style="font-size: 0.95rem; font-weight: 700; color: #1e293b; margin-bottom: 6px; line-height: 1.4;">${item.item_name}</div>
+                <div class="item-meta" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 0.75rem; color: #64748b;">
+                    <span style="background: #f1f5f9; padding: 3px 10px; border-radius: 6px; font-weight: 700; color: #475569; border: 1px solid #e2e8f0;">${item.unit}</span>
+                    <span style="font-weight: 700; color: ${isOutOfStock ? '#ef4444' : '#10b981'}; display: flex; align-items: center; gap: 5px;">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: currentColor;"></span>
+                        Qty: ${item.quantity}
                     </span>
-                    ${item.has_offer ? `<span class="badge badge-warning" style="margin-left:8px;">🏷️ ${item.offer_text}</span>` : ''}
-                    ${isLowStock ? `<span style="margin-left:8px; color:#9a3412; font-weight:800; font-size:0.6rem; text-transform:uppercase; background:#ffedd5; padding:2px 8px; border-radius:100px; border:1px solid #fed7aa; display:inline-flex; align-items:center; gap:3px;">⚠️ Low Stock</span>` : ''}
+                    ${item.has_offer ? `
+                        <span style="background: #fffbeb; color: #92400e; padding: 3px 10px; border-radius: 6px; font-weight: 700; border: 1px solid #fef3c7; display: inline-flex; align-items: center; gap: 4px;">
+                            🏷️ ${item.offer_text}
+                        </span>` : ''}
                 </div>
             </div>
             <div class="qty-controls">
