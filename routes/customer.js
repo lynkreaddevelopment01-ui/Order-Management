@@ -257,8 +257,26 @@ router.post('/order', async (req, res) => {
 
         for (const item of items) {
             const qty = parseInt(item.quantity) || 1;
-            const stockId = parseInt(item.stockId);
-            if (!stockId) continue;
+            const stockId = item.stockId ? parseInt(item.stockId) : null;
+
+            if (!stockId) {
+                // Manual Item Request
+                orderItems.push({
+                    stockId: null,
+                    itemName: String(item.itemName || 'Custom Item'),
+                    quantity: Number(qty),
+                    unitPrice: 0,
+                    totalPrice: 0,
+                    isOffer: 0,
+                    bonusQty: 0,
+                    appliedOffer: null,
+                    offerSkipped: 0,
+                    missedOfferText: null,
+                    distPrice: 0,
+                    mrp: 0
+                });
+                continue;
+            }
 
             const stockItem = await db.prepare(`
                 SELECT s.*, so.offer_price, so.offer_text, so.is_active as offer_active
@@ -348,11 +366,13 @@ router.post('/order', async (req, res) => {
                     [orderId, oi.stockId, oi.itemName, oi.quantity, oi.unitPrice, oi.totalPrice, oi.isOffer, oi.bonusQty, oi.appliedOffer, oi.offerSkipped, oi.missedOfferText, oi.distPrice, oi.mrp]
                 );
 
-                console.log(`[ORDER] Updating stock for ID ${oi.stockId} (Reducing by ${oi.quantity + oi.bonusQty})`);
-                await client.query(
-                    'UPDATE stock SET quantity = quantity - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-                    [oi.quantity + oi.bonusQty, oi.stockId]
-                );
+                if (oi.stockId) {
+                    console.log(`[ORDER] Updating stock for ID ${oi.stockId} (Reducing by ${oi.quantity + oi.bonusQty})`);
+                    await client.query(
+                        'UPDATE stock SET quantity = quantity - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                        [oi.quantity + oi.bonusQty, oi.stockId]
+                    );
+                }
             }
 
             await client.query('COMMIT');

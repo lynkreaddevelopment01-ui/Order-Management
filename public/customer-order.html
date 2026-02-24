@@ -541,6 +541,7 @@
         let customerData = null;
         let stockItems = [];
         let cart = {}; // stockId: quantity
+        let manualCart = {}; // itemName: quantity
 
         // Pagination state
         let customerPagination = {
@@ -826,8 +827,22 @@
 
         function renderFlatStockList(items) {
             const area = document.getElementById('stockListArea');
+            const searchVal = customerPagination.search;
+
             if (items.length === 0) {
-                area.innerHTML = '<div class="empty-state"><h3>No matching items</h3></div>';
+                let emptyHtml = `
+                  <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <h3>No matching items</h3>
+                    <p>We couldn't find "${searchVal}" in our stock list.</p>
+                  </div>
+                `;
+
+                if (searchVal) {
+                    emptyHtml += renderManualRequestBox(searchVal);
+                }
+
+                area.innerHTML = emptyHtml;
                 return;
             }
 
@@ -850,29 +865,94 @@
                 html += outOfStock.map(item => renderItemHtml(item)).join('');
             }
 
+            // Always add manual option at the bottom when searching
+            if (searchVal) {
+                html += `
+                    <div style="padding: 24px 16px 12px; font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 12px;">
+                        <span style="flex-shrink: 0;">Not found in list?</span>
+                        <div style="height: 1px; background: #e2e8f0; flex-grow: 1;"></div>
+                    </div>
+                `;
+                html += renderManualRequestBox(searchVal);
+            }
+
             area.innerHTML = html;
+
+            // Render existing manual items from manualCart if searching
+            if (searchVal) {
+                renderManualCartItems();
+            }
         }
 
-        function renderItemHtml(item) {
-            const qty = cart[item.id] || 0;
-            const hasOffer = item.has_offer;
-            const isOut = item.quantity <= 0;
-
+        function renderManualRequestBox(val) {
             return `
-                <div class="stock-item ${hasOffer ? 'offer-item' : ''} ${isOut ? 'out-of-stock-item' : ''}" id="stock-item-${item.id}">
+                <div class="stock-item" style="background: var(--primary-50); border: 1px dashed var(--primary-200);">
                     <div class="item-info">
-                        <div class="item-name">${item.item_name} ${isOut ? '<span style="font-size:0.6rem; color:#ef4444; border:1px solid #fee2e2; background:#fef2f2; padding:1px 6px; border-radius:4px; margin-left:6px;">BACKORDER</span>' : ''}</div>
-                        <div class="item-meta">
-                            <span class="text-muted">Mfr: ${item.category || 'General'}</span> | 
-                            <span style="color:${isOut ? '#ef4444' : 'inherit'}; font-weight:${isOut ? '700' : 'normal'}">Stock: ${item.quantity}</span>
+                        <div class="item-name" style="color: var(--primary-700);">Request "${val}"</div>
+                        <div class="item-meta" style="font-size: 0.75rem;">Add this as a manual request to your order</div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="addManualItem('${val.replace(/'/g, "\\'")}')" style="padding: 6px 16px; font-size: 0.75rem;">
+                        Add Request
+                    </button>
+                </div>
+            `;
+        }
+
+        function addManualItem(name) {
+            if (!name) return;
+            manualCart[name] = (manualCart[name] || 0) + 1;
+            showToast(`Added request for "${name}"`, 'success');
+            updateSummaryBar();
+            if (customerPagination.search) {
+                renderManualCartItems();
+            }
+        }
+
+        function updateManualQty(name, delta) {
+            const current = manualCart[name] || 0;
+            const newQty = Math.max(0, current + delta);
+            if (newQty === 0) {
+                delete manualCart[name];
+            } else {
+                manualCart[name] = newQty;
+            }
+            updateSummaryBar();
+            renderManualCartItems();
+        }
+
+        function renderManualCartItems() {
+            const containerId = 'manualCartContainer';
+            let container = document.getElementById(containerId);
+
+            if (!container) {
+                container = document.createElement('div');
+                container.id = containerId;
+                document.getElementById('stockListArea').appendChild(container);
+            }
+
+            const entries = Object.entries(manualCart);
+            if (entries.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="padding: 16px 16px 8px; font-size: 0.7rem; font-weight: 800; color: var(--accent-600); text-transform: uppercase; letter-spacing: 0.1em;">
+                    Your Manual Requests
+                </div>
+                ${entries.map(([name, qty]) => `
+                    <div class="stock-item" style="border-left: 3px solid var(--accent-500); background: #fffcf0;">
+                        <div class="item-info">
+                            <div class="item-name">${name} <span class="badge badge-warning" style="font-size:0.55rem; margin-left:4px;">REQUEST</span></div>
+                            <div class="item-meta">Direct request - check price with team</div>
+                        </div>
+                        <div class="qty-controls">
+                            <button class="qty-btn" onclick="updateManualQty('${name.replace(/'/g, "\\'")}', -1)">−</button>
+                            <div class="qty-value">${qty}</div>
+                            <button class="qty-btn" onclick="updateManualQty('${name.replace(/'/g, "\\'")}', 1)">+</button>
                         </div>
                     </div>
-                    <div class="qty-controls">
-                        <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
-                        <div class="qty-value" id="qty-${item.id}">${qty}</div>
-                        <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
-                    </div>
-                </div>
+                `).join('')}
             `;
         }
 
@@ -923,7 +1003,9 @@
 
         function updateSummaryBar() {
             const entries = Object.entries(cart);
-            const totalItems = entries.reduce((sum, [, qty]) => sum + qty, 0);
+            const manualEntries = Object.entries(manualCart);
+            const totalItems = entries.reduce((sum, [, qty]) => sum + qty, 0) +
+                manualEntries.reduce((sum, [, qty]) => sum + qty, 0);
 
             const cartCountEl = document.getElementById('cartItemCount');
             const submitBtn = document.getElementById('submitOrderBtn');
@@ -948,7 +1030,9 @@
         // ===== SUBMIT ORDER =====
         async function submitOrder() {
             const entries = Object.entries(cart);
-            if (entries.length === 0) {
+            const manualEntries = Object.entries(manualCart);
+
+            if (entries.length === 0 && manualEntries.length === 0) {
                 showToast('Please add at least one item', 'warning');
                 return;
             }
@@ -957,11 +1041,17 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Placing Order...';
 
-            const items = entries.map(([stockId, quantity]) => ({
-                stockId: parseInt(stockId),
-                quantity
-            }));
-
+            const items = [
+                ...entries.map(([stockId, quantity]) => ({
+                    stockId: parseInt(stockId),
+                    quantity
+                })),
+                ...manualEntries.map(([name, quantity]) => ({
+                    stockId: null,
+                    itemName: name,
+                    quantity
+                }))
+            ];
 
             try {
                 const res = await fetch('/api/customer/order', {
@@ -988,6 +1078,7 @@
 
                     // Reset cart
                     cart = {};
+                    manualCart = {};
                     updateSummaryBar();
                     loadStock(); // Refresh stock quantities immediately
                 } else {
