@@ -100,7 +100,7 @@ router.post('/stock/import', authenticateToken, requireAdmin, upload.single('csv
 
             const rawCode = item.item_code || item.ItemCode || item.code || item.Code || '';
             const itemCode = rawCode || ('PRD-' + String(recordsCount).padStart(4, '0'));
-            const category = item.category || item.Category || '';
+            const category = item.manufacturer || item.Manufacturer || item.category || item.Category || '';
             const unit = item.unit || item.Unit || 'Pcs';
 
             // Priority for Qty

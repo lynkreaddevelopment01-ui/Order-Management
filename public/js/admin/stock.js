@@ -22,7 +22,7 @@ async function loadStockPage(page = 1) {
       <div class="card-header">
         <div class="search-bar" style="width: 300px;">
           <span class="search-icon">🔍</span>
-          <input type="text" class="form-control" placeholder="Search stock items..." oninput="filterStockTable(this.value)" id="stockSearch">
+          <input type="text" class="form-control" placeholder="Search manufacturers, items..." oninput="filterStockTable(this.value)" id="stockSearch">
         </div>
         <span class="text-muted text-sm" id="stockCount"></span>
       </div>
@@ -33,7 +33,7 @@ async function loadStockPage(page = 1) {
               <tr>
                 <th>Code</th>
                 <th>Item Name</th>
-                <th>Category</th>
+                <th>Manufacturer</th>
                 <th>Unit</th>
                 <th>Qty</th>
                 <th>PTR rate</th>

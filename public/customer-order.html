@@ -9,17 +9,57 @@
     <link rel="stylesheet" href="/css/style.css">
     <style>
         /* Customer-specific overrides */
-        .order-category-header {
-            padding: 16px 0 8px;
-            font-size: 0.8rem;
+        .order-manufacturer-header {
+            padding: 16px 20px;
+            font-size: 0.85rem;
             font-weight: 800;
             color: var(--primary-700);
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            background: transparent;
-            margin-top: 24px;
-            margin-bottom: 24px;
-            border-bottom: 2px solid var(--neutral-100);
+            letter-spacing: 0.05em;
+            background: #f8fafc;
+            margin-top: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--neutral-100);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .order-manufacturer-header:hover {
+            background: #f1f5f9;
+        }
+
+        .order-manufacturer-header.active {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            background: var(--primary-50);
+            border-color: var(--primary-100);
+        }
+
+        .accordion-content {
+            display: none;
+            border: 1px solid var(--neutral-100);
+            border-top: none;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            overflow: hidden;
+            background: white;
+            padding: 4px 0;
+        }
+
+        .accordion-content.show {
+            display: block;
+        }
+
+        .accordion-icon {
+            transition: transform 0.3s;
+            font-size: 0.7rem;
+        }
+
+        .active .accordion-icon {
+            transform: rotate(180deg);
         }
 
         .special-offers-header {
@@ -405,8 +445,9 @@
                     style="border-radius: 14px; margin: 24px 0; box-shadow: var(--shadow-sm); border: 1px solid var(--neutral-200);">
                     <div class="search-bar" style="max-width:100%; margin:0;">
                         <span class="search-icon">🔍</span>
-                        <input type="text" class="form-control" placeholder="Search across all medical supplies..."
-                            oninput="filterItems(this.value)" id="itemSearchInput">
+                        <input type="text" class="form-control"
+                            placeholder="Search manufacturers or medical supplies..." oninput="filterItems(this.value)"
+                            id="itemSearchInput">
                     </div>
                 </div>
 
@@ -414,14 +455,6 @@
                     <!-- Items rendered here -->
                 </div>
 
-                <!-- Notes -->
-                <div class="notes-input" style="margin: 20px 0 40px;">
-                    <div class="form-group">
-                        <label class="form-label" for="orderNotes">Order Notes (Optional)</label>
-                        <textarea class="form-control" id="orderNotes" placeholder="Any special instructions..."
-                            rows="2"></textarea>
-                    </div>
-                </div>
             </div>
 
             <!-- Sticky Bottom Summary Bar -->
@@ -740,56 +773,93 @@
                 return;
             }
 
-            // Group by category, but extract offers into a "Special Offers" group at the top
-            const categories = {};
+            // Group by Manufacturer (renamed from category)
+            const manufacturers = {};
             const offers = items.filter(i => i && i.has_offer);
             const others = items.filter(i => i && !i.has_offer);
 
             if (offers.length > 0) {
-                categories['Special Offers ✨'] = offers;
+                manufacturers['Special Offers ✨'] = offers;
             }
 
             others.forEach(item => {
-                const cat = item.category || 'General';
-                if (!categories[cat]) categories[cat] = [];
-                categories[cat].push(item);
+                const mfr = item.category || 'General';
+                if (!manufacturers[mfr]) manufacturers[mfr] = [];
+                manufacturers[mfr].push(item);
             });
 
             let html = '';
-            for (const [cat, catItems] of Object.entries(categories)) {
-                const isSpecial = cat.includes('Special Offers');
-                html += `<div class="order-category-header ${isSpecial ? 'special-offers-header' : ''}">${cat}</div>`;
-                html += catItems.map(item => {
+            let groupIndex = 0;
+            for (const [mfr, mfrItems] of Object.entries(manufacturers)) {
+                const isSpecial = mfr.includes('Special Offers');
+                const groupId = `group-${groupIndex++}`;
+
+                html += `
+                    <div class="order-manufacturer-header ${isSpecial ? 'special-offers-header' : ''}" 
+                         onclick="toggleAccordion('${groupId}')" id="header-${groupId}">
+                        <span>${mfr}</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content" id="${groupId}">
+                `;
+
+                html += mfrItems.map(item => {
                     if (!item) return '';
                     const qty = cart[item.id] || 0;
                     const hasOffer = item.has_offer;
 
                     return `
-            <div class="stock-item ${hasOffer ? 'offer-item' : ''}" id="stock-item-${item.id}">
-              <div class="item-info">
-                <div class="item-name">
-                  ${item.item_name}
-                  ${hasOffer ? `<span class="badge badge-warning" style="font-size:0.65rem;margin-left:6px;">🏷️ ${item.offer_text || 'OFFER'}</span>` : ''}
-                </div>
-                <div class="item-meta" style="display:flex;align-items:center;gap:12px;margin-top:8px;">
-                  <span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; background:var(--neutral-100); padding:2px 8px; border-radius:6px;">📦 ${item.unit}</span>
-                  <span style="font-size:0.85rem; font-weight:800; color:${item.quantity > 5 ? 'var(--success-700)' : 'var(--danger-600)'}; display:flex; align-items:center; gap:4px;">
-                    <span style="height:6px; width:6px; background:currentColor; border-radius:50%;"></span>
-                    STOCK: ${item.quantity}
-                  </span>
-                </div>
-              </div>
-              <div class="qty-controls">
-                <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
-                <div class="qty-value" id="qty-${item.id}">${qty}</div>
-                <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
-              </div>
-            </div>
-          `;
+                        <div class="stock-item ${hasOffer ? 'offer-item' : ''}" id="stock-item-${item.id}" style="border-bottom: 1px solid #f1f5f9; margin: 0; border-radius: 0;">
+                          <div class="item-info">
+                            <div class="item-name">
+                              ${item.item_name}
+                              ${hasOffer ? `<span class="badge badge-warning" style="font-size:0.65rem;margin-left:6px;">🏷️ ${item.offer_text || 'OFFER'}</span>` : ''}
+                            </div>
+                            <div class="item-meta" style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+                              <span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; background:var(--neutral-100); padding:2px 8px; border-radius:6px;">📦 ${item.unit}</span>
+                              <span style="font-size:0.85rem; font-weight:800; color:${item.quantity > 5 ? 'var(--success-700)' : 'var(--danger-600)'}; display:flex; align-items:center; gap:4px;">
+                                <span style="height:6px; width:6px; background:currentColor; border-radius:50%;"></span>
+                                STOCK: ${item.quantity}
+                              </span>
+                            </div>
+                          </div>
+                          <div class="qty-controls">
+                            <button class="qty-btn" onclick="updateQty(${item.id}, -1, ${item.quantity})">−</button>
+                            <div class="qty-value" id="qty-${item.id}">${qty}</div>
+                            <button class="qty-btn" onclick="updateQty(${item.id}, 1, ${item.quantity})">+</button>
+                          </div>
+                        </div>
+                    `;
                 }).join('');
+
+                html += `</div>`;
             }
 
             area.innerHTML = html;
+
+            // Auto open first one if not searching
+            if (!customerPagination.search && groupIndex > 0) {
+                toggleAccordion('group-0');
+            } else if (customerPagination.search) {
+                // Open all if searching
+                for (let i = 0; i < groupIndex; i++) {
+                    toggleAccordion(`group-${i}`, true);
+                }
+            }
+        }
+
+        function toggleAccordion(groupId, forceOpen = false) {
+            const content = document.getElementById(groupId);
+            const header = document.getElementById(`header-${groupId}`);
+            if (!content || !header) return;
+
+            if (forceOpen) {
+                content.classList.add('show');
+                header.classList.add('active');
+            } else {
+                content.classList.toggle('show');
+                header.classList.toggle('active');
+            }
         }
 
         function filterItems(query) {
@@ -860,13 +930,12 @@
                 quantity
             }));
 
-            const notes = document.getElementById('orderNotes').value.trim();
 
             try {
                 const res = await fetch('/api/customer/order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ uniqueCode, customerId, items, notes })
+                    body: JSON.stringify({ uniqueCode, customerId, items, notes: "" })
                 });
                 const data = await res.json();
 
@@ -887,7 +956,6 @@
 
                     // Reset cart
                     cart = {};
-                    document.getElementById('orderNotes').value = '';
                     updateSummaryBar();
                     loadStock(); // Refresh stock quantities immediately
                 } else {
