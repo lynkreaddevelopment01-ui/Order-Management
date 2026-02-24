@@ -63,8 +63,9 @@
         }
 
         .special-offers-header {
-            color: var(--accent-600) !important;
-            border-bottom-color: var(--accent-200) !important;
+            color: var(--accent-700) !important;
+            background: var(--accent-50) !important;
+            border-color: var(--accent-200) !important;
         }
 
         .order-success-overlay {
@@ -763,8 +764,9 @@
             let html = '';
             manufacturers.forEach((mfr, index) => {
                 const groupId = `group-${index}`;
+                const isSpecial = mfr.includes('Special Offers');
                 html += `
-                    <div class="order-manufacturer-header" 
+                    <div class="order-manufacturer-header ${isSpecial ? 'special-offers-header' : ''}" 
                          onclick="toggleAccordion('${groupId}', '${encodeURIComponent(mfr)}')" id="header-${groupId}">
                         <span>${mfr}</span>
                         <span class="accordion-icon">▼</span>

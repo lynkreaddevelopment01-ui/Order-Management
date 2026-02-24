@@ -74,13 +74,22 @@ router.get('/manufacturers/:uniqueCode', async (req, res) => {
         if (!admin) return res.status(404).json({ error: 'Vendor not found' });
 
         const manufacturers = await db.prepare(`
-            SELECT DISTINCT category as name 
+            SELECT DISTINCT CASE WHEN category IS NULL OR category = '' THEN 'General' ELSE category END as name 
             FROM stock 
             WHERE admin_id = $1 AND is_active = 1 AND quantity > 0
-            ORDER BY category ASC
+            ORDER BY name ASC
         `).all([admin.id]);
 
-        res.json({ manufacturers: manufacturers.map(m => m.name || 'General') });
+        const hasOffers = await db.prepare(`
+            SELECT 1 FROM special_offers WHERE admin_id = $1 AND is_active = 1 LIMIT 1
+        `).get([admin.id]);
+
+        const names = manufacturers.map(m => m.name);
+        if (hasOffers) {
+            names.unshift('Special Offers ✨');
+        }
+
+        res.json({ manufacturers: names });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -99,15 +108,27 @@ router.get('/stock-by-manufacturer/:uniqueCode', async (req, res) => {
 
         if (!admin) return res.status(404).json({ error: 'Vendor not found' });
 
+        let whereClause = 'WHERE s.admin_id = $1 AND s.is_active = 1 AND s.quantity > 0';
+        let params = [admin.id];
+
+        if (manufacturer === 'Special Offers ✨') {
+            whereClause += " AND so.id IS NOT NULL AND so.is_active = 1";
+        } else if (manufacturer === 'General') {
+            whereClause += " AND (s.category IS NULL OR s.category = '')";
+        } else {
+            whereClause += " AND s.category = $2";
+            params.push(manufacturer);
+        }
+
         const stock = await db.prepare(`
             SELECT s.id, s.item_code, s.item_name, s.category, s.unit, s.quantity, s.price,
                 CASE WHEN so.id IS NOT NULL AND so.is_active = 1 THEN 1 ELSE 0 END as has_offer,
                 so.offer_text, so.discount_percent, so.offer_price
             FROM stock s
             LEFT JOIN special_offers so ON s.id = so.stock_id AND so.is_active = 1
-            WHERE s.admin_id = $1 AND s.is_active = 1 AND s.quantity > 0 AND (s.category = $2 OR (s.category IS NULL AND $2 = 'General'))
+            ${whereClause}
             ORDER BY has_offer DESC, s.item_name ASC
-        `).all([admin.id, manufacturer === 'General' ? null : manufacturer]);
+        `).all(params);
 
         res.json({ stock });
     } catch (err) {
@@ -143,7 +164,7 @@ router.get(['/stock', '/stock/:uniqueCode'], async (req, res) => {
         let params = [adminId];
 
         if (search) {
-            whereClause += " AND (LOWER(s.item_name) LIKE LOWER($2) OR LOWER(s.category) LIKE LOWER($2) OR LOWER(s.item_code) LIKE LOWER($2))";
+            whereClause += " AND (LOWER(s.item_name) LIKE LOWER($2) OR LOWER(COALESCE(s.category, 'General')) LIKE LOWER($2) OR LOWER(s.item_code) LIKE LOWER($2))";
             params.push(`%${search}%`);
         }
 

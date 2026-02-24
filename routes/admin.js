@@ -45,7 +45,7 @@ router.get('/stock', authenticateToken, requireAdmin, async (req, res) => {
         let params = [adminId];
 
         if (search) {
-            whereClause += " AND (LOWER(s.item_name) LIKE LOWER($2) OR LOWER(s.item_code) LIKE LOWER($2) OR LOWER(s.category) LIKE LOWER($2))";
+            whereClause += " AND (LOWER(s.item_name) LIKE LOWER($2) OR LOWER(s.item_code) LIKE LOWER($2) OR LOWER(COALESCE(s.category, 'General')) LIKE LOWER($2))";
             params.push(`%${search}%`);
         }
 
